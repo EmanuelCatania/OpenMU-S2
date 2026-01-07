@@ -62,8 +62,8 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
     {
         this._xor32Key = LoadXor32Key();
         this._hackCheckKeys = LoadHackCheckKeys(serviceProvider);
-        this._serverToClientKey = LoadSimpleModulusKeys("MU_SM_ENC_097", DefaultServerToClientKey, true, "Dec2.dat");
-        this._clientToServerKey = LoadSimpleModulusKeys("MU_SM_DEC_097", DefaultClientToServerKey, false, "Enc1.dat");
+        this._serverToClientKey = LoadSimpleModulusKeyPair("MU_SM_ENC_097", DefaultServerToClientKey, true, "Dec2.dat", fileContainsEncryptKey: false);
+        this._clientToServerKey = LoadSimpleModulusKeyPair("MU_SM_DEC_097", DefaultClientToServerKey, false, "Enc1.dat", fileContainsEncryptKey: true);
     }
 
     /// <inheritdoc />
@@ -251,7 +251,12 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
         return null;
     }
 
-    private static SimpleModulusKeys LoadSimpleModulusKeys(string envVar, uint[] fallback, bool isEncryption, string defaultFileName)
+    private static SimpleModulusKeys LoadSimpleModulusKeyPair(
+        string envVar,
+        uint[] fallback,
+        bool fallbackContainsEncryptKey,
+        string defaultFileName,
+        bool fileContainsEncryptKey)
     {
         var path = Environment.GetEnvironmentVariable(envVar);
         if (string.IsNullOrWhiteSpace(path))
@@ -279,10 +284,7 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
                 var serializer = new SimpleModulusKeySerializer();
                 if (serializer.TryDeserialize(path.Trim(), out var mod, out var key, out var xor))
                 {
-                    var combined = CombineKeys(mod, key, xor);
-                    return isEncryption
-                        ? SimpleModulusKeys.CreateEncryptionKeys(combined)
-                        : SimpleModulusKeys.CreateDecryptionKeys(combined);
+                    return CreateKeyPair(mod, key, xor, fileContainsEncryptKey);
                 }
             }
             catch
@@ -291,9 +293,24 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
             }
         }
 
-        return isEncryption
-            ? SimpleModulusKeys.CreateEncryptionKeys(fallback)
-            : SimpleModulusKeys.CreateDecryptionKeys(fallback);
+        return CreateKeyPairFromFallback(fallback, fallbackContainsEncryptKey);
+    }
+
+    private static SimpleModulusKeys CreateKeyPair(uint[] modulus, uint[] key, uint[] xor, bool keyIsEncryption)
+    {
+        var generator = new SimpleModulusKeyGenerator();
+        var otherKey = generator.FindOtherKey(modulus, key);
+        var encryptKey = keyIsEncryption ? key : otherKey;
+        var decryptKey = keyIsEncryption ? otherKey : key;
+        return new SimpleModulusKeys(modulus, xor, encryptKey, decryptKey);
+    }
+
+    private static SimpleModulusKeys CreateKeyPairFromFallback(uint[] fallback, bool fallbackContainsEncryptKey)
+    {
+        var modulus = fallback.Take(4).ToArray();
+        var key = fallback.Skip(4).Take(4).ToArray();
+        var xor = fallback.Skip(8).Take(4).ToArray();
+        return CreateKeyPair(modulus, key, xor, fallbackContainsEncryptKey);
     }
 
     private static uint[] CombineKeys(uint[] modulus, uint[] key, uint[] xor)
