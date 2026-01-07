@@ -30,7 +30,19 @@ internal abstract class ChatMessageBaseHandlerPlugIn : IPacketHandlerPlugIn
     /// <inheritdoc/>
     public async ValueTask HandlePacketAsync(Player player, Memory<byte> packet)
     {
-        WhisperMessage message = packet;
-        await this._messageAction.ChatMessageAsync(player, message.ReceiverName, message.Message, this.IsWhisper).ConfigureAwait(false);
+        if (packet.Length < 13)
+        {
+            return;
+        }
+
+        if (this.IsWhisper)
+        {
+            WhisperMessage message = packet;
+            await this._messageAction.ChatMessageAsync(player, message.ReceiverName, message.Message, true).ConfigureAwait(false);
+            return;
+        }
+
+        PublicChatMessage publicMessage = packet;
+        await this._messageAction.ChatMessageAsync(player, publicMessage.Character, publicMessage.Message, false).ConfigureAwait(false);
     }
 }
