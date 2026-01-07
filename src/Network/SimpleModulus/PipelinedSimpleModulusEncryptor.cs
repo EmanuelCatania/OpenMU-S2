@@ -55,7 +55,18 @@ public class PipelinedSimpleModulusEncryptor : PipelinedSimpleModulusBase, IPipe
     /// <param name="target">The target pipe writer.</param>
     /// <param name="encryptionKeys">The encryption keys.</param>
     public PipelinedSimpleModulusEncryptor(PipeWriter target, SimpleModulusKeys encryptionKeys)
-        : base(encryptionKeys.DecryptKey.Length == 4 ? Variant.New : Variant.Old)
+        : this(target, encryptionKeys, useCounter: true)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelinedSimpleModulusEncryptor" /> class.
+    /// </summary>
+    /// <param name="target">The target pipe writer.</param>
+    /// <param name="encryptionKeys">The encryption keys.</param>
+    /// <param name="useCounter">Whether to use the packet counter.</param>
+    public PipelinedSimpleModulusEncryptor(PipeWriter target, SimpleModulusKeys encryptionKeys, bool useCounter)
+        : base(GetVariant(encryptionKeys, useCounter))
     {
         this._target = target;
         this._encryptionKeys = encryptionKeys;
@@ -222,5 +233,15 @@ public class PipelinedSimpleModulusEncryptor : PipelinedSimpleModulusBase, IPipe
         {
             this.EncryptionResult[i] = this.EncryptionResult[i] ^ keys.XorKey[i] ^ (this.EncryptionResult[i + 1] & 0xFFFF);
         }
+    }
+
+    private static Variant GetVariant(SimpleModulusKeys keys, bool useCounter)
+    {
+        if (keys.DecryptKey.Length != 4)
+        {
+            return Variant.Old;
+        }
+
+        return useCounter ? Variant.New : Variant.NewWithoutCounter;
     }
 }

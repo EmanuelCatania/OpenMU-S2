@@ -76,14 +76,14 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
         {
             // The 0.97 client decrypts server packets with simple modulus only.
             var hackCheck = new PipelinedHackCheckEncryptor(target, this._hackCheckKeys);
-            return new PipelinedSimpleModulusEncryptor(hackCheck.Writer, this._serverToClientKey);
+            return new PipelinedSimpleModulusEncryptor(hackCheck.Writer, this._serverToClientKey, useCounter: false);
         }
 
         var clientHackCheck = new PipelinedHackCheckEncryptor(target, this._hackCheckKeys);
         target = clientHackCheck.Writer;
 
         return new PipelinedXor32Encryptor(
-            new PipelinedSimpleModulusEncryptor(target, this._clientToServerKey).Writer,
+            new PipelinedSimpleModulusEncryptor(target, this._clientToServerKey, useCounter: false).Writer,
             this._xor32Key);
     }
 
@@ -94,12 +94,14 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
         {
             source = new PipelinedHackCheckDecryptor(source, this._hackCheckKeys).Reader;
 
-            return new PipelinedDecryptor(source, this._clientToServerKey, this._xor32Key);
+            return new PipelinedXor32Decryptor(
+                new PipelinedSimpleModulusDecryptor(source, this._clientToServerKey, useCounter: false).Reader,
+                this._xor32Key);
         }
 
         source = new PipelinedHackCheckDecryptor(source, this._hackCheckKeys).Reader;
 
-        return new PipelinedSimpleModulusDecryptor(source, this._serverToClientKey);
+        return new PipelinedSimpleModulusDecryptor(source, this._serverToClientKey, useCounter: false);
     }
 
     private static byte[] LoadXor32Key()

@@ -33,19 +33,22 @@ public abstract class PipelinedSimpleModulusBase : PacketPipeReaderBase
     /// <param name="variant">Variant of the algorithm.</param>
     protected PipelinedSimpleModulusBase(Variant variant)
     {
-        if (variant == Variant.New)
-        {
-            // newer versions
-            this.DecryptedBlockSize = 8;
-            this.EncryptedBlockSize = 11;
-            this.EncryptionResult = new uint[4];
-            this.Counter = new Counter();
-        }
-        else
+        if (variant == Variant.Old)
         {
             this.DecryptedBlockSize = 32;
             this.EncryptedBlockSize = 38;
             this.EncryptionResult = new uint[16];
+            return;
+        }
+
+        // newer versions
+        this.DecryptedBlockSize = 8;
+        this.EncryptedBlockSize = 11;
+        this.EncryptionResult = new uint[4];
+
+        if (variant == Variant.New)
+        {
+            this.Counter = new Counter();
         }
     }
 
@@ -59,6 +62,12 @@ public abstract class PipelinedSimpleModulusBase : PacketPipeReaderBase
         /// Uses a counter.
         /// </summary>
         New,
+
+        /// <summary>
+        /// The newer variant, where the unencrypted block size is 8 bytes, and encrypted is 11 bytes.
+        /// Doesn't use a counter (0.97 clients).
+        /// </summary>
+        NewWithoutCounter,
 
         /// <summary>
         /// The older variant, where the unencrypted block size is 32 bytes and encrypted is 38 bytes.

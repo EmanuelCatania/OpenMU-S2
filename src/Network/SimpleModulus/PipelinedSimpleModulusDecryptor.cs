@@ -54,7 +54,18 @@ public class PipelinedSimpleModulusDecryptor : PipelinedSimpleModulusBase, IPipe
     /// <param name="source">The source.</param>
     /// <param name="decryptionKeys">The decryption keys.</param>
     public PipelinedSimpleModulusDecryptor(PipeReader source, SimpleModulusKeys decryptionKeys)
-        : base(decryptionKeys.DecryptKey.Length == 4 ? Variant.New : Variant.Old)
+        : this(source, decryptionKeys, useCounter: true)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelinedSimpleModulusDecryptor"/> class.
+    /// </summary>
+    /// <param name="source">The source.</param>
+    /// <param name="decryptionKeys">The decryption keys.</param>
+    /// <param name="useCounter">Whether to use the packet counter.</param>
+    public PipelinedSimpleModulusDecryptor(PipeReader source, SimpleModulusKeys decryptionKeys, bool useCounter)
+        : base(GetVariant(decryptionKeys, useCounter))
     {
         this.Source = source;
         this._decryptionKeys = decryptionKeys;
@@ -255,6 +266,16 @@ public class PipelinedSimpleModulusDecryptor : PipelinedSimpleModulusBase, IPipe
         }
 
         return blockSize;
+    }
+
+    private static Variant GetVariant(SimpleModulusKeys keys, bool useCounter)
+    {
+        if (keys.DecryptKey.Length != 4)
+        {
+            return Variant.Old;
+        }
+
+        return useCounter ? Variant.New : Variant.NewWithoutCounter;
     }
 
     /// <summary>
