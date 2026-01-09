@@ -182,7 +182,7 @@ public class DefaultTcpGameServerListener : IGameServerListener
     {
         var connection = e.AcceptedConnection;
         var remoteEndPoint = connection.EndPoint as IPEndPoint;
-        this.Log(l => l.LogDebug($"Game Client connected, Address {remoteEndPoint}"));
+        this.Log(l => l.LogInformation("Game Client connected, Address {remoteEndPoint}", remoteEndPoint));
 
         var remotePlayer = new RemotePlayer(this._gameContext, connection, this.ClientVersion);
         connection.Disconnected += async () =>

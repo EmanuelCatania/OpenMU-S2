@@ -138,6 +138,26 @@ public class RemotePlayer : Player, IClientVersionProvider
 
             try
             {
+                if (this.Logger.IsEnabled(LogLevel.Information))
+                {
+                    var headerSize = buffer.Span.GetPacketHeaderSize();
+                    if (headerSize > 0 && buffer.Length > headerSize)
+                    {
+                        var headerType = buffer.Span[0];
+                        var code = buffer.Span[headerSize];
+                        var normalizedCode = ArrayExtensions.NormalizePacketType(headerType, code);
+                        if (normalizedCode == 0xF1 || normalizedCode == 0xF3)
+                        {
+                            var subType = buffer.Span.GetPacketSubType();
+                            this.Logger.LogInformation("[C->S] Packet {header:X2} {code:X2} {subCode} Len {length}",
+                                ArrayExtensions.NormalizePacketHeader(headerType),
+                                normalizedCode,
+                                subType.HasValue ? $"0x{subType.Value:X2}" : "n/a",
+                                buffer.Length);
+                        }
+                    }
+                }
+
                 if (this.Logger.IsEnabled(LogLevel.Debug))
                 {
                     this.Logger.LogDebug("[C->S] {0}", buffer.ToArray().AsString());
