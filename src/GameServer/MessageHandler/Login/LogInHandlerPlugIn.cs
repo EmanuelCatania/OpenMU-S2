@@ -40,20 +40,20 @@ public class LogInHandlerPlugIn : ISubPacketHandlerPlugIn
         if (packet.Length <= Login075.Length)
         {
             // we have some version like 0.75 which just uses three bytes as version identifier
-            Login075 message = packet;
-            await this.HandleLoginAsync(player, this.Decrypt(message.Username), this.Decrypt(message.Password), message.TickCount, ClientVersionResolver.Resolve(message.ClientVersion)).ConfigureAwait(false);
+            Login075 message075 = packet;
+            await this.HandleLoginAsync(player, this.Decrypt(message075.Username), this.Decrypt(message075.Password), message075.TickCount, ClientVersionResolver.Resolve(message075.ClientVersion)).ConfigureAwait(false);
             return;
         }
 
         if (packet.Length <= LoginShortPassword.Length)
         {
-            LoginShortPassword message = packet;
-            await this.HandleLoginAsync(player, this.Decrypt(message.Username), this.Decrypt(message.Password), message.TickCount, ClientVersionResolver.Resolve(message.ClientVersion)).ConfigureAwait(false);
+            LoginShortPassword messageShort = packet;
+            await this.HandleLoginAsync(player, this.Decrypt(messageShort.Username), this.Decrypt(messageShort.Password), messageShort.TickCount, ClientVersionResolver.Resolve(messageShort.ClientVersion)).ConfigureAwait(false);
             return;
         }
 
-        LoginLongPassword message = packet;
-        await this.HandleLoginAsync(player, this.Decrypt(message.Username), this.Decrypt(message.Password), message.TickCount, ClientVersionResolver.Resolve(message.ClientVersion)).ConfigureAwait(false);
+        LoginLongPassword messageLong = packet;
+        await this.HandleLoginAsync(player, this.Decrypt(messageLong.Username), this.Decrypt(messageLong.Password), messageLong.TickCount, ClientVersionResolver.Resolve(messageLong.ClientVersion)).ConfigureAwait(false);
     }
 
     private string Decrypt(Span<byte> stringSpan)
