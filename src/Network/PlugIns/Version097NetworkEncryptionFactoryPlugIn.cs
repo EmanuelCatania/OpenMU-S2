@@ -53,7 +53,6 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
     private readonly HackCheckKeys _hackCheckKeys;
     private readonly SimpleModulusKeys _serverToClientKey;
     private readonly SimpleModulusKeys _clientToServerKey;
-    private readonly bool _useHackCheck;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Version097NetworkEncryptionFactoryPlugIn"/> class.

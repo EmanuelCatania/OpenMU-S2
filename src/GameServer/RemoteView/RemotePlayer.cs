@@ -140,17 +140,17 @@ public class RemotePlayer : Player, IClientVersionProvider
             {
                 if (this.Logger.IsEnabled(LogLevel.Information))
                 {
-                    var headerSize = buffer.Span.GetPacketHeaderSize();
+                    var headerSize = MUnique.OpenMU.Network.ArrayExtensions.GetPacketHeaderSize(buffer.Span);
                     if (headerSize > 0 && buffer.Length > headerSize)
                     {
                         var headerType = buffer.Span[0];
                         var code = buffer.Span[headerSize];
-                        var normalizedCode = ArrayExtensions.NormalizePacketType(headerType, code);
+                        var normalizedCode = MUnique.OpenMU.Network.ArrayExtensions.NormalizePacketType(headerType, code);
                         if (normalizedCode == 0xF1 || normalizedCode == 0xF3)
                         {
-                            var subType = buffer.Span.GetPacketSubType();
+                            var subType = MUnique.OpenMU.Network.ArrayExtensions.GetPacketSubType(buffer.Span);
                             this.Logger.LogInformation("[C->S] Packet {header:X2} {code:X2} {subCode} Len {length}",
-                                ArrayExtensions.NormalizePacketHeader(headerType),
+                                MUnique.OpenMU.Network.ArrayExtensions.NormalizePacketHeader(headerType),
                                 normalizedCode,
                                 subType.HasValue ? $"0x{subType.Value:X2}" : "n/a",
                                 buffer.Length);
