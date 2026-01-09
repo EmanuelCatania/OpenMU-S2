@@ -23,7 +23,7 @@ using MUnique.OpenMU.PlugIns;
 /// </summary>
 [PlugIn("Network Encryption - 0.97", "A plugin which provides network encryptors and decryptors for game clients of version 0.97.")]
 [Guid("6B6F07F2-709F-4A39-8897-0B6A2E7DE8C0")]
-public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactoryPlugIn
+public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactoryPlugIn, IPortAwareNetworkEncryptionFactoryPlugIn
 {
     private const string DefaultHackCheckCustomerName = "OpenMU97";
     private const string DefaultHackCheckSerial = "TbYehR2hFUPBKgZj";
@@ -53,6 +53,7 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
     private readonly HackCheckKeys _hackCheckKeys;
     private readonly SimpleModulusKeys _serverToClientKey;
     private readonly SimpleModulusKeys _clientToServerKey;
+    private readonly bool _useHackCheck;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Version097NetworkEncryptionFactoryPlugIn"/> class.
@@ -72,15 +73,36 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
     /// <inheritdoc />
     public IPipelinedEncryptor CreateEncryptor(PipeWriter target, DataDirection direction)
     {
+        return this.CreateEncryptor(target, direction, -1);
+    }
+
+    /// <inheritdoc />
+    public IPipelinedDecryptor CreateDecryptor(PipeReader source, DataDirection direction)
+    {
+        return this.CreateDecryptor(source, direction, -1);
+    }
+
+    /// <inheritdoc />
+    public IPipelinedEncryptor CreateEncryptor(PipeWriter target, DataDirection direction, int port)
+    {
+        var useHackCheck = ShouldUseHackCheck(port);
         if (direction == DataDirection.ServerToClient)
         {
-            // The 0.97 client decrypts server packets with simple modulus only.
-            var hackCheck = new PipelinedHackCheckEncryptor(target, this._hackCheckKeys);
-            return new PipelinedSimpleModulusEncryptor(hackCheck.Writer, this._serverToClientKey, useCounter: false);
+            if (useHackCheck)
+            {
+                // The 0.97 client decrypts server packets with simple modulus only.
+                var hackCheck = new PipelinedHackCheckEncryptor(target, this._hackCheckKeys);
+                return new PipelinedSimpleModulusEncryptor(hackCheck.Writer, this._serverToClientKey, useCounter: false);
+            }
+
+            return new PipelinedSimpleModulusEncryptor(target, this._serverToClientKey, useCounter: false);
         }
 
-        var clientHackCheck = new PipelinedHackCheckEncryptor(target, this._hackCheckKeys);
-        target = clientHackCheck.Writer;
+        if (useHackCheck)
+        {
+            var clientHackCheck = new PipelinedHackCheckEncryptor(target, this._hackCheckKeys);
+            target = clientHackCheck.Writer;
+        }
 
         return new PipelinedXor32Encryptor(
             new PipelinedSimpleModulusEncryptor(target, this._clientToServerKey, useCounter: false).Writer,
@@ -88,18 +110,25 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
     }
 
     /// <inheritdoc />
-    public IPipelinedDecryptor CreateDecryptor(PipeReader source, DataDirection direction)
+    public IPipelinedDecryptor CreateDecryptor(PipeReader source, DataDirection direction, int port)
     {
+        var useHackCheck = ShouldUseHackCheck(port);
         if (direction == DataDirection.ClientToServer)
         {
-            source = new PipelinedHackCheckDecryptor(source, this._hackCheckKeys).Reader;
+            if (useHackCheck)
+            {
+                source = new PipelinedHackCheckDecryptor(source, this._hackCheckKeys).Reader;
+            }
 
             return new PipelinedXor32Decryptor(
                 new PipelinedSimpleModulusDecryptor(source, this._clientToServerKey, useCounter: false).Reader,
                 this._xor32Key);
         }
 
-        source = new PipelinedHackCheckDecryptor(source, this._hackCheckKeys).Reader;
+        if (useHackCheck)
+        {
+            source = new PipelinedHackCheckDecryptor(source, this._hackCheckKeys).Reader;
+        }
 
         return new PipelinedSimpleModulusDecryptor(source, this._serverToClientKey, useCounter: false);
     }
@@ -143,6 +172,16 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
         }
 
         return HackCheckKeys.Create(customerName.Trim(), clientSerial.Trim());
+    }
+
+    private static bool ShouldUseHackCheck(int port)
+    {
+        if (port <= 0)
+        {
+            return true;
+        }
+
+        return port >= 55901 && port <= 55950;
     }
 
     private static string? TryGetClientSerialFromConfiguration(IServiceProvider? serviceProvider)

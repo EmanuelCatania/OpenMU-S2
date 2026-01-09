@@ -146,6 +146,11 @@ public class DefaultTcpGameServerListener : IGameServerListener
 
     private IPipelinedEncryptor? CreateEncryptor(PipeWriter arg)
     {
+        if (this.EncryptionFactoryPlugIn is IPortAwareNetworkEncryptionFactoryPlugIn portAware)
+        {
+            return portAware.CreateEncryptor(arg, DataDirection.ServerToClient, this._endPoint.NetworkPort);
+        }
+
         return this.EncryptionFactoryPlugIn is { } plugin
             ? plugin.CreateEncryptor(arg, DataDirection.ServerToClient)
             : new PipelinedEncryptor(arg);
@@ -153,6 +158,11 @@ public class DefaultTcpGameServerListener : IGameServerListener
 
     private IPipelinedDecryptor? CreateDecryptor(PipeReader arg)
     {
+        if (this.EncryptionFactoryPlugIn is IPortAwareNetworkEncryptionFactoryPlugIn portAware)
+        {
+            return portAware.CreateDecryptor(arg, DataDirection.ClientToServer, this._endPoint.NetworkPort);
+        }
+
         return this.EncryptionFactoryPlugIn is { } plugin
             ? plugin.CreateDecryptor(arg, DataDirection.ClientToServer)
             : new PipelinedDecryptor(arg);
