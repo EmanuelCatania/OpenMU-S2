@@ -5,6 +5,7 @@
 namespace MUnique.OpenMU.GameServer.MessageHandler.Character;
 
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.PlayerActions.Character;
 using MUnique.OpenMU.PlugIns;
@@ -28,6 +29,11 @@ internal class CharacterListRequestPacketHandlerPlugIn : ISubPacketHandlerPlugIn
     /// <inheritdoc />
     public async ValueTask HandlePacketAsync(Player player, Memory<byte> packet)
     {
+        if (player.Logger.IsEnabled(LogLevel.Information))
+        {
+            player.Logger.LogInformation("Received character list request packet. Length: {length}", packet.Length);
+        }
+
         await this._requestCharacterListAction.RequestCharacterListAsync(player).ConfigureAwait(false);
     }
 }

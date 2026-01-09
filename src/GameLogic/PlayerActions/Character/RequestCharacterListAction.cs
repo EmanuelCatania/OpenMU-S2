@@ -4,6 +4,7 @@
 
 namespace MUnique.OpenMU.GameLogic.PlayerActions.Character;
 
+using Microsoft.Extensions.Logging;
 using MUnique.OpenMU.GameLogic.Views.Character;
 
 /// <summary>
@@ -17,9 +18,23 @@ public class RequestCharacterListAction
     /// <param name="player">The player who requests the character list.</param>
     public async ValueTask RequestCharacterListAsync(Player player)
     {
-        if (await player.PlayerState.TryAdvanceToAsync(PlayerState.CharacterSelection).ConfigureAwait(false))
+        if (player.Logger.IsEnabled(LogLevel.Information))
         {
-            await player.InvokeViewPlugInAsync<IShowCharacterListPlugIn>(p => p.ShowCharacterListAsync()).ConfigureAwait(false);
+            player.Logger.LogInformation("Character list requested. CurrentState: {state}", player.PlayerState.CurrentState);
         }
+
+        var advanced = await player.PlayerState.TryAdvanceToAsync(PlayerState.CharacterSelection).ConfigureAwait(false);
+        if (!advanced)
+        {
+            player.Logger.LogWarning("Character list request rejected. CurrentState: {state}", player.PlayerState.CurrentState);
+            return;
+        }
+
+        if (player.Logger.IsEnabled(LogLevel.Information))
+        {
+            player.Logger.LogInformation("Character list request accepted. Sending list.");
+        }
+
+        await player.InvokeViewPlugInAsync<IShowCharacterListPlugIn>(p => p.ShowCharacterListAsync()).ConfigureAwait(false);
     }
 }

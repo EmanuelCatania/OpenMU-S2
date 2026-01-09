@@ -5,6 +5,7 @@
 namespace MUnique.OpenMU.GameServer.RemoteView.Login;
 
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 using MUnique.OpenMU.GameLogic.Views.Login;
 using MUnique.OpenMU.Network.Packets.ServerToClient;
 using MUnique.OpenMU.PlugIns;
@@ -27,6 +28,11 @@ public class ShowLoginResultPlugIn : IShowLoginResultPlugIn
     /// <inheritdoc/>
     public async ValueTask ShowLoginResultAsync(LoginResult loginResult)
     {
+        if (this._player.Logger.IsEnabled(LogLevel.Information))
+        {
+            this._player.Logger.LogInformation("Sending login result {result}.", loginResult);
+        }
+
         await this._player.Connection.SendLoginResponseAsync(ConvertResult(loginResult)).ConfigureAwait(false);
     }
 

@@ -7,6 +7,7 @@ namespace MUnique.OpenMU.GameServer.RemoteView.Character;
 using System.Buffers.Binary;
 using System.Text;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.Views.Character;
 using MUnique.OpenMU.Network;
@@ -36,8 +37,15 @@ public class ShowCharacterListPlugIn097 : IShowCharacterListPlugIn
     public async ValueTask ShowCharacterListAsync()
     {
         var connection = this._player.Connection;
-        if (connection is null || this._player.Account is null)
+        if (connection is null)
         {
+            this._player.Logger.LogWarning("Character list skipped: connection is null.");
+            return;
+        }
+
+        if (this._player.Account is null)
+        {
+            this._player.Logger.LogWarning("Character list skipped: account is null.");
             return;
         }
 
@@ -49,6 +57,11 @@ public class ShowCharacterListPlugIn097 : IShowCharacterListPlugIn
             .Where(c => c.CharacterClass?.Number < 16)
             .OrderBy(c => c.CharacterSlot)
             .ToList();
+
+        if (this._player.Logger.IsEnabled(LogLevel.Information))
+        {
+            this._player.Logger.LogInformation("Sending character list for account {account}. Count: {count}", this._player.Account.LoginName, supportedCharacters.Count);
+        }
 
         int WriteCharacterList()
         {
@@ -80,6 +93,11 @@ public class ShowCharacterListPlugIn097 : IShowCharacterListPlugIn
             await connection.SendAsync(WriteCharacterCreationEnable).ConfigureAwait(false);
         }
         await connection.SendAsync(WriteMoveList).ConfigureAwait(false);
+
+        if (this._player.Logger.IsEnabled(LogLevel.Information))
+        {
+            this._player.Logger.LogInformation("Character list packets sent for account {account}.", this._player.Account.LoginName);
+        }
 
         int WriteMoveList()
         {
