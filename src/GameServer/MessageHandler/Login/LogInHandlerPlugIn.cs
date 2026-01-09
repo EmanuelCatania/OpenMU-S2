@@ -37,25 +37,23 @@ public class LogInHandlerPlugIn : ISubPacketHandlerPlugIn
     /// <inheritdoc/>
     public async ValueTask HandlePacketAsync(Player player, Memory<byte> packet)
     {
-        if (packet.Length < 42)
+        if (packet.Length <= Login075.Length)
         {
-            if (packet.Length > 28 + 3)
-            {
-                LoginShortPassword message = packet;
-                await this.HandleLoginAsync(player, this.Decrypt(message.Username), this.Decrypt(message.Password), message.TickCount, ClientVersionResolver.Resolve(message.ClientVersion)).ConfigureAwait(false);
-            }
-            else
-            {
-                // we have some version like 0.75 which just uses three bytes as version identifier
-                Login075 message = packet;
-                await this.HandleLoginAsync(player, this.Decrypt(message.Username), this.Decrypt(message.Password), message.TickCount, ClientVersionResolver.Resolve(message.ClientVersion)).ConfigureAwait(false);
-            }
-        }
-        else
-        {
-            LoginLongPassword message = packet;
+            // we have some version like 0.75 which just uses three bytes as version identifier
+            Login075 message = packet;
             await this.HandleLoginAsync(player, this.Decrypt(message.Username), this.Decrypt(message.Password), message.TickCount, ClientVersionResolver.Resolve(message.ClientVersion)).ConfigureAwait(false);
+            return;
         }
+
+        if (packet.Length <= LoginShortPassword.Length)
+        {
+            LoginShortPassword message = packet;
+            await this.HandleLoginAsync(player, this.Decrypt(message.Username), this.Decrypt(message.Password), message.TickCount, ClientVersionResolver.Resolve(message.ClientVersion)).ConfigureAwait(false);
+            return;
+        }
+
+        LoginLongPassword message = packet;
+        await this.HandleLoginAsync(player, this.Decrypt(message.Username), this.Decrypt(message.Password), message.TickCount, ClientVersionResolver.Resolve(message.ClientVersion)).ConfigureAwait(false);
     }
 
     private string Decrypt(Span<byte> stringSpan)
