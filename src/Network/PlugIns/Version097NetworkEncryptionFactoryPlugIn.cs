@@ -12,6 +12,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using MUnique.OpenMU.Network;
 using MUnique.OpenMU.Network.HackCheck;
 using MUnique.OpenMU.Network.SimpleModulus;
@@ -49,6 +51,7 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
         560, 8315, 21196, 27946,
     };
 
+    private readonly ILogger<Version097NetworkEncryptionFactoryPlugIn> _logger;
     private readonly byte[] _xor32Key;
     private readonly HackCheckKeys _hackCheckKeys;
     private readonly SimpleModulusKeys _serverToClientKey;
@@ -60,10 +63,12 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
     /// <param name="serviceProvider">The service provider.</param>
     public Version097NetworkEncryptionFactoryPlugIn(IServiceProvider? serviceProvider = null)
     {
+        var loggerFactory = serviceProvider?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+        this._logger = loggerFactory?.CreateLogger<Version097NetworkEncryptionFactoryPlugIn>() ?? NullLogger<Version097NetworkEncryptionFactoryPlugIn>.Instance;
         this._xor32Key = LoadXor32Key();
         this._hackCheckKeys = LoadHackCheckKeys(serviceProvider);
-        this._serverToClientKey = LoadSimpleModulusKeyPair("MU_SM_ENC_097", DefaultServerToClientKey, true, "Dec2.dat", fileContainsEncryptKey: false);
-        this._clientToServerKey = LoadSimpleModulusKeyPair("MU_SM_DEC_097", DefaultClientToServerKey, false, "Enc1.dat", fileContainsEncryptKey: true);
+        this._serverToClientKey = this.LoadSimpleModulusKeyPair("MU_SM_ENC_097", DefaultServerToClientKey, true, "Dec2.dat", fileContainsEncryptKey: false, "ServerToClient");
+        this._clientToServerKey = this.LoadSimpleModulusKeyPair("MU_SM_DEC_097", DefaultClientToServerKey, false, "Enc1.dat", fileContainsEncryptKey: true, "ClientToServer");
     }
 
     /// <inheritdoc />
@@ -332,14 +337,16 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
         return null;
     }
 
-    private static SimpleModulusKeys LoadSimpleModulusKeyPair(
+    private SimpleModulusKeys LoadSimpleModulusKeyPair(
         string envVar,
         uint[] fallback,
         bool fallbackContainsEncryptKey,
         string defaultFileName,
-        bool fileContainsEncryptKey)
+        bool fileContainsEncryptKey,
+        string directionLabel)
     {
         var path = Environment.GetEnvironmentVariable(envVar);
+        var source = "fallback";
         if (string.IsNullOrWhiteSpace(path))
         {
             var baseDir = AppContext.BaseDirectory;
@@ -347,6 +354,7 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
             if (File.Exists(dataPath))
             {
                 path = dataPath;
+                source = dataPath;
             }
             else
             {
@@ -354,6 +362,7 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
                 if (File.Exists(keysDataPath))
                 {
                     path = keysDataPath;
+                    source = keysDataPath;
                 }
                 else
                 {
@@ -361,9 +370,14 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
                     if (File.Exists(localPath))
                     {
                         path = localPath;
+                        source = localPath;
                     }
                 }
             }
+        }
+        else
+        {
+            source = path.Trim();
         }
 
         if (!string.IsNullOrWhiteSpace(path))
@@ -373,15 +387,20 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
                 var serializer = new SimpleModulusKeySerializer();
                 if (serializer.TryDeserialize(path.Trim(), out var mod, out var key, out var xor))
                 {
+                    this._logger.LogInformation("Loaded 0.97 simple modulus keys for {direction} from {path}.", directionLabel, source);
                     return CreateKeyPair(mod, key, xor, fileContainsEncryptKey);
                 }
+
+                this._logger.LogWarning("Failed to deserialize 0.97 simple modulus keys for {direction} from {path}. Falling back to built-in keys.", directionLabel, source);
             }
             catch
             {
+                this._logger.LogWarning("Failed to load 0.97 simple modulus keys for {direction} from {path}. Falling back to built-in keys.", directionLabel, source);
                 // Fall back to built-in keys when the file can't be loaded.
             }
         }
 
+        this._logger.LogWarning("Using built-in 0.97 simple modulus keys for {direction}.", directionLabel);
         return CreateKeyPairFromFallback(fallback, fallbackContainsEncryptKey);
     }
 

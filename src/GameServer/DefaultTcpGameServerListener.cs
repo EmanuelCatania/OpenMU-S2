@@ -75,6 +75,10 @@ public class DefaultTcpGameServerListener : IGameServerListener
         {
             this.Log(l => l.LogWarning("No network encryption plugin for version {clientVersion} available. It falls back to default encryption.", this.ClientVersion));
         }
+        else
+        {
+            this.Log(l => l.LogInformation("Using network encryption plugin {plugInType} for client version {clientVersion}.", this.EncryptionFactoryPlugIn.GetType().Name, this.ClientVersion));
+        }
 
         var port = this._endPoint.NetworkPort;
         this._logger.LogInformation("Starting Server Listener, port {port}", port);
