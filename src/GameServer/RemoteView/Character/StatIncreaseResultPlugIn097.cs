@@ -7,6 +7,7 @@ namespace MUnique.OpenMU.GameServer.RemoteView.Character;
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using MUnique.OpenMU.AttributeSystem;
+using MUnique.OpenMU.GameServer.RemoteView;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.Views.Character;
@@ -84,6 +85,7 @@ public class StatIncreaseResultPlugIn097 : IStatIncreaseResultPlugIn
                 offset += 4;
                 BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(offset, 4), ClampToUInt32(attributes[Stats.BaseEnergy]));
 
+                PacketLogHelper.LogPacket(this._player.Logger, "F3:06 StatIncrease", span, packetLength);
                 return packetLength;
             }).ConfigureAwait(false);
             return;

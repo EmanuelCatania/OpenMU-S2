@@ -6,6 +6,7 @@ namespace MUnique.OpenMU.GameServer.RemoteView.World;
 
 using System.Runtime.InteropServices;
 using MUnique.OpenMU.DataModel.Entities;
+using MUnique.OpenMU.GameServer.RemoteView;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.GameLogic.Views.World;
@@ -70,6 +71,10 @@ public class AppearanceChangedPlugIn : IAppearanceChangedPlugIn
 
             // Additionally, we could think of ignoring changes of rings and pendants, as they are usually not visible in the game client, except
             // maybe transformation rings. So we'll leave it as it is, too.
+            if (this._player.ClientVersion.Season == 0 && this._player.ClientVersion.Episode == 97)
+            {
+                PacketLogHelper.LogPacket(this._player.Logger, "25 AppearanceChanged", span, size);
+            }
             return size;
         }
 

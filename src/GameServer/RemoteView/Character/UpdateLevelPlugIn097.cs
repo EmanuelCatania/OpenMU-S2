@@ -6,6 +6,7 @@ namespace MUnique.OpenMU.GameServer.RemoteView.Character;
 
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using MUnique.OpenMU.GameServer.RemoteView;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.Views;
@@ -84,6 +85,7 @@ public class UpdateLevelPlugIn097 : IUpdateLevelPlugIn
             offset += 4;
             BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(offset, 4), viewNextExperience);
 
+            PacketLogHelper.LogPacket(this._player.Logger, "F3:05 LevelUp", span, packetLength);
             return packetLength;
         }).ConfigureAwait(false);
 

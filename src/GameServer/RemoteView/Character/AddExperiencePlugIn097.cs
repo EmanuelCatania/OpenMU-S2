@@ -6,6 +6,7 @@ namespace MUnique.OpenMU.GameServer.RemoteView.Character;
 
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using MUnique.OpenMU.GameServer.RemoteView;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.Views;
@@ -73,6 +74,7 @@ public class AddExperiencePlugIn097 : IAddExperiencePlugIn
                 BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(9, 4), viewDamage);
                 BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(13, 4), viewExperience);
                 BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(17, 4), viewNextExperience);
+                PacketLogHelper.LogPacket(this._player.Logger, "9C RewardExperience", span, packetLength);
                 return packetLength;
             }).ConfigureAwait(false);
             damage = 0;

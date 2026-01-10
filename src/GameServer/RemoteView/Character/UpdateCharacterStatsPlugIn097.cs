@@ -6,6 +6,7 @@ namespace MUnique.OpenMU.GameServer.RemoteView.Character;
 
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using MUnique.OpenMU.GameServer.RemoteView;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.Views.Character;
@@ -80,6 +81,7 @@ public class UpdateCharacterStatsPlugIn097 : IUpdateCharacterStatsPlugIn
             span[43] = (byte)selectedCharacter.CharacterStatus.Convert();
             BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(44, 2), (ushort)selectedCharacter.UsedFruitPoints);
             BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(46, 2), selectedCharacter.GetMaximumFruitPoints());
+            PacketLogHelper.LogPacket(this._player.Logger, "F3:03 CharacterInformation097", span, packetLength);
             return packetLength;
         }
 
@@ -129,6 +131,7 @@ public class UpdateCharacterStatsPlugIn097 : IUpdateCharacterStatsPlugIn
             offset += 4;
             BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(offset, 4), 0);
 
+            PacketLogHelper.LogPacket(this._player.Logger, "F3:E0 NewCharacterInfo", span, packetLength);
             return packetLength;
         }
 
@@ -179,6 +182,7 @@ public class UpdateCharacterStatsPlugIn097 : IUpdateCharacterStatsPlugIn
             offset += 4;
             BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(offset, 4), ClampToUInt32(attributes[Stats.DefenseRatePvm]));
 
+            PacketLogHelper.LogPacket(this._player.Logger, "F3:E1 NewCharacterCalc", span, packetLength);
             return packetLength;
         }
     }

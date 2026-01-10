@@ -6,6 +6,7 @@ namespace MUnique.OpenMU.GameServer.RemoteView.World;
 
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using MUnique.OpenMU.GameServer.RemoteView;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.Views;
@@ -60,6 +61,7 @@ public class ShowHitPlugIn097 : IShowHitPlugIn
                 BinaryPrimitives.WriteUInt16BigEndian(span.Slice(5, 2), healthDamage);
                 BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(7, 4), viewCurHp);
                 BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(11, 4), viewDamageHp);
+                PacketLogHelper.LogPacket(this._player.Logger, "15 Damage", span, packetLength);
                 return packetLength;
             }).ConfigureAwait(false);
 
