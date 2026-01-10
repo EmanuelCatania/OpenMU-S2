@@ -67,11 +67,17 @@ public sealed class PipelinedAutoXor32Decryptor : PacketPipeReaderBase, IPipelin
             this._selectedKey = this.SelectKey(packet);
         }
 
-        this.DecryptAndWrite(packet, this._selectedKey ?? this._primaryKey);
+        if (this._selectedKey is null)
+        {
+            this.CopyPacket(packet);
+            return await this.TryFlushWriterAsync(this._pipe.Writer).ConfigureAwait(false);
+        }
+
+        this.DecryptAndWrite(packet, this._selectedKey);
         return await this.TryFlushWriterAsync(this._pipe.Writer).ConfigureAwait(false);
     }
 
-    private byte[] SelectKey(ReadOnlySequence<byte> packet)
+    private byte[]? SelectKey(ReadOnlySequence<byte> packet)
     {
         var primaryMatch = this.TryMatchPacket(packet, this._primaryKey);
         var fallbackMatch = this.TryMatchPacket(packet, this._fallbackKey);
@@ -94,8 +100,8 @@ public sealed class PipelinedAutoXor32Decryptor : PacketPipeReaderBase, IPipelin
             return this._primaryKey;
         }
 
-        this.LogSelection("primary (no match)", packet);
-        return this._primaryKey;
+        this.LogSelection("none (no match)", packet);
+        return null;
     }
 
     private void LogSelection(string selection, ReadOnlySequence<byte> packet)
@@ -161,6 +167,14 @@ public sealed class PipelinedAutoXor32Decryptor : PacketPipeReaderBase, IPipelin
             target[i] = (byte)(target[i] ^ target[i - 1] ^ key[i % 32]);
         }
 
+        this._pipe.Writer.Advance(target.Length);
+    }
+
+    private void CopyPacket(ReadOnlySequence<byte> packet)
+    {
+        var span = this._pipe.Writer.GetSpan((int)packet.Length);
+        var target = span.Slice(0, (int)packet.Length);
+        packet.CopyTo(target);
         this._pipe.Writer.Advance(target.Length);
     }
 
