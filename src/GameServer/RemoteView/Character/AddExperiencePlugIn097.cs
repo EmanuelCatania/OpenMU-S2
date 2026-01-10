@@ -62,18 +62,17 @@ public class AddExperiencePlugIn097 : IAddExperiencePlugIn
 
             await connection.SendAsync(() =>
             {
-                const int packetLength = 23;
+                const int packetLength = 21;
                 var span = connection.Output.GetSpan(packetLength)[..packetLength];
                 span[0] = 0xC1;
                 span[1] = (byte)packetLength;
                 span[2] = 0x9C;
                 BinaryPrimitives.WriteUInt16BigEndian(span.Slice(3, 2), id);
                 BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(5, 2), sendExp);
-                BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(7, 2), 0);
-                BinaryPrimitives.WriteUInt16BigEndian(span.Slice(9, 2), damage);
-                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(11, 4), viewDamage);
-                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(15, 4), viewExperience);
-                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(19, 4), viewNextExperience);
+                BinaryPrimitives.WriteUInt16BigEndian(span.Slice(7, 2), damage);
+                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(9, 4), viewDamage);
+                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(13, 4), viewExperience);
+                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(17, 4), viewNextExperience);
                 return packetLength;
             }).ConfigureAwait(false);
             damage = 0;

@@ -45,7 +45,7 @@ public class UpdateLevelPlugIn097 : IUpdateLevelPlugIn
 
         await connection.SendAsync(() =>
         {
-            const int packetLength = 48;
+            const int packetLength = 46;
             var span = connection.Output.GetSpan(packetLength)[..packetLength];
             span[0] = 0xC1;
             span[1] = (byte)packetLength;
