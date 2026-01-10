@@ -343,17 +343,25 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
         if (string.IsNullOrWhiteSpace(path))
         {
             var baseDir = AppContext.BaseDirectory;
-            var dataPath = Path.Combine(baseDir, "Data", "Keys097", defaultFileName);
+            var dataPath = Path.Combine(baseDir, "Data", defaultFileName);
             if (File.Exists(dataPath))
             {
                 path = dataPath;
             }
             else
             {
-                var localPath = Path.Combine(baseDir, "Keys097", defaultFileName);
-                if (File.Exists(localPath))
+                var keysDataPath = Path.Combine(baseDir, "Data", "Keys097", defaultFileName);
+                if (File.Exists(keysDataPath))
                 {
-                    path = localPath;
+                    path = keysDataPath;
+                }
+                else
+                {
+                    var localPath = Path.Combine(baseDir, "Keys097", defaultFileName);
+                    if (File.Exists(localPath))
+                    {
+                        path = localPath;
+                    }
                 }
             }
         }
