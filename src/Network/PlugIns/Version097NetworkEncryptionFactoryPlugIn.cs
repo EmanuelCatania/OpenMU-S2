@@ -143,15 +143,19 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
                     source = new PipelinedHackCheckDecryptor(source, this._hackCheckKeys).Reader;
                 }
 
-                return new PipelinedXor32Decryptor(
+                return new PipelinedAutoXor32Decryptor(
                     new PipelinedSimpleModulusDecryptor(source, this._clientToServerKey, useCounter: false).Reader,
-                    this._xor32Key);
+                    this._xor32Key,
+                    DefaultKeys.Xor32Key,
+                    this._logger);
             }
 
             source = new PipelinedAutoHackCheckDecryptor(source, this._hackCheckKeys, sharedHackCheckState).Reader;
-            return new PipelinedXor32Decryptor(
+            return new PipelinedAutoXor32Decryptor(
                 new PipelinedSimpleModulusDecryptor(source, this._clientToServerKey, useCounter: false).Reader,
-                this._xor32Key);
+                this._xor32Key,
+                DefaultKeys.Xor32Key,
+                this._logger);
         }
 
         if (sharedHackCheckState is null)
