@@ -99,14 +99,14 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
                 {
                     // The 0.97 client decrypts server packets with simple modulus only.
                     var hackCheck = new PipelinedHackCheckEncryptor(target, this._hackCheckKeys);
-                    return new PipelinedSimpleModulusEncryptor(hackCheck.Writer, this._serverToClientKey, useCounter: false);
+                    return new PipelinedSimpleModulusEncryptor(hackCheck.Writer, this._serverToClientKey, useCounter: true);
                 }
 
-                return new PipelinedSimpleModulusEncryptor(target, this._serverToClientKey, useCounter: false);
+                return new PipelinedSimpleModulusEncryptor(target, this._serverToClientKey, useCounter: true);
             }
 
             var autoHackCheck = new PipelinedAutoHackCheckEncryptor(target, this._hackCheckKeys, sharedHackCheckState);
-            return new PipelinedSimpleModulusEncryptor(autoHackCheck.Writer, this._serverToClientKey, useCounter: false);
+            return new PipelinedSimpleModulusEncryptor(autoHackCheck.Writer, this._serverToClientKey, useCounter: true);
         }
 
         if (sharedHackCheckState is null)
@@ -119,13 +119,13 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
             }
 
             return new PipelinedXor32Encryptor(
-                new PipelinedSimpleModulusEncryptor(target, this._clientToServerKey, useCounter: false).Writer,
+                new PipelinedSimpleModulusEncryptor(target, this._clientToServerKey, useCounter: true).Writer,
                 this._xor32Key);
         }
 
         var autoClientHackCheck = new PipelinedAutoHackCheckEncryptor(target, this._hackCheckKeys, sharedHackCheckState);
         return new PipelinedXor32Encryptor(
-            new PipelinedSimpleModulusEncryptor(autoClientHackCheck.Writer, this._clientToServerKey, useCounter: false).Writer,
+            new PipelinedSimpleModulusEncryptor(autoClientHackCheck.Writer, this._clientToServerKey, useCounter: true).Writer,
             this._xor32Key);
     }
 
@@ -144,7 +144,7 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
                 }
 
                 return new PipelinedAutoXor32Decryptor(
-                    new PipelinedSimpleModulusDecryptor(source, this._clientToServerKey, useCounter: false).Reader,
+                    new PipelinedSimpleModulusDecryptor(source, this._clientToServerKey, useCounter: true).Reader,
                     this._xor32Key,
                     DefaultKeys.Xor32Key,
                     this._logger);
@@ -152,7 +152,7 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
 
             source = new PipelinedAutoHackCheckDecryptor(source, this._hackCheckKeys, sharedHackCheckState).Reader;
             return new PipelinedAutoXor32Decryptor(
-                new PipelinedSimpleModulusDecryptor(source, this._clientToServerKey, useCounter: false).Reader,
+                new PipelinedSimpleModulusDecryptor(source, this._clientToServerKey, useCounter: true).Reader,
                 this._xor32Key,
                 DefaultKeys.Xor32Key,
                 this._logger);
@@ -166,11 +166,11 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
                 source = new PipelinedHackCheckDecryptor(source, this._hackCheckKeys).Reader;
             }
 
-            return new PipelinedSimpleModulusDecryptor(source, this._serverToClientKey, useCounter: false);
+            return new PipelinedSimpleModulusDecryptor(source, this._serverToClientKey, useCounter: true);
         }
 
         source = new PipelinedAutoHackCheckDecryptor(source, this._hackCheckKeys, sharedHackCheckState).Reader;
-        return new PipelinedSimpleModulusDecryptor(source, this._serverToClientKey, useCounter: false);
+        return new PipelinedSimpleModulusDecryptor(source, this._serverToClientKey, useCounter: true);
     }
 
     private static byte[] LoadXor32Key()
