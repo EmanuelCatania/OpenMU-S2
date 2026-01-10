@@ -72,9 +72,6 @@ public class UpdateLevelPlugIn097 : IUpdateLevelPlugIn
             offset += 2;
             BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(offset, 2), selectedCharacter.GetMaximumFruitPoints());
             offset += 2;
-            span[offset] = 0; // padding for client struct alignment
-            span[offset + 1] = 0;
-            offset += 2;
             BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(offset, 4), ClampToUInt32(selectedCharacter.LevelUpPoints));
             offset += 4;
             BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(offset, 4), ClampToUInt32(charStats[Stats.MaximumHealth]));
