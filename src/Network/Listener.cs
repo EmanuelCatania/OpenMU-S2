@@ -4,9 +4,11 @@
 
 namespace MUnique.OpenMU.Network;
 
+using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using Pipelines.Sockets.Unofficial;
 using MUnique.OpenMU.PlugIns;
@@ -16,6 +18,8 @@ using MUnique.OpenMU.PlugIns;
 /// </summary>
 public class Listener
 {
+    internal static AsyncLocal<ListenerConnectionContext?> CurrentContext { get; } = new();
+
     private readonly ILogger _logger;
     private readonly int _port;
     private readonly Func<PipeReader, IPipelinedDecryptor?>? _decryptorCreator;
@@ -97,7 +101,17 @@ public class Listener
     private IConnection CreateConnection(Socket clientSocket)
     {
         var socketConnection = SocketConnection.Create(clientSocket);
-        return new Connection(socketConnection, this.CreateDecryptor(socketConnection.Input), this.CreateEncryptor(socketConnection.Output), this._loggerFactory.CreateLogger<Connection>());
+        var previousContext = CurrentContext.Value;
+        var context = new ListenerConnectionContext(socketConnection);
+        try
+        {
+            CurrentContext.Value = context;
+            return new Connection(socketConnection, this.CreateDecryptor(socketConnection.Input), this.CreateEncryptor(socketConnection.Output), this._loggerFactory.CreateLogger<Connection>());
+        }
+        finally
+        {
+            CurrentContext.Value = previousContext;
+        }
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD100:Avoid async void methods", Justification = "Exceptions are catched.")]
@@ -164,5 +178,30 @@ public class Listener
         {
             this._logger.LogError(ex, "Unexpected error in OnAccept.");
         }
+    }
+}
+
+internal sealed class ListenerConnectionContext
+{
+    private readonly Dictionary<Type, object> _items = new();
+
+    public ListenerConnectionContext(SocketConnection socketConnection)
+    {
+        this.SocketConnection = socketConnection;
+    }
+
+    public SocketConnection SocketConnection { get; }
+
+    public T GetOrCreate<T>(Func<T> factory)
+        where T : class
+    {
+        if (this._items.TryGetValue(typeof(T), out var existing))
+        {
+            return (T)existing;
+        }
+
+        var created = factory();
+        this._items[typeof(T)] = created;
+        return created;
     }
 }

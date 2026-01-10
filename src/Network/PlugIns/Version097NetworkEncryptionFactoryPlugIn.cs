@@ -84,51 +84,83 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
     /// <inheritdoc />
     public IPipelinedEncryptor CreateEncryptor(PipeWriter target, DataDirection direction, int port)
     {
-        var useHackCheck = ShouldUseHackCheck(port);
+        var sharedHackCheckState = TryGetSharedHackCheckState();
         if (direction == DataDirection.ServerToClient)
         {
-            if (useHackCheck)
+            if (sharedHackCheckState is null)
             {
-                // The 0.97 client decrypts server packets with simple modulus only.
-                var hackCheck = new PipelinedHackCheckEncryptor(target, this._hackCheckKeys);
-                return new PipelinedSimpleModulusEncryptor(hackCheck.Writer, this._serverToClientKey, useCounter: false);
+                var useHackCheck = ShouldUseHackCheck(port);
+                if (useHackCheck)
+                {
+                    // The 0.97 client decrypts server packets with simple modulus only.
+                    var hackCheck = new PipelinedHackCheckEncryptor(target, this._hackCheckKeys);
+                    return new PipelinedSimpleModulusEncryptor(hackCheck.Writer, this._serverToClientKey, useCounter: false);
+                }
+
+                return new PipelinedSimpleModulusEncryptor(target, this._serverToClientKey, useCounter: false);
             }
 
-            return new PipelinedSimpleModulusEncryptor(target, this._serverToClientKey, useCounter: false);
+            var autoHackCheck = new PipelinedAutoHackCheckEncryptor(target, this._hackCheckKeys, sharedHackCheckState);
+            return new PipelinedSimpleModulusEncryptor(autoHackCheck.Writer, this._serverToClientKey, useCounter: false);
         }
 
-        if (useHackCheck)
+        if (sharedHackCheckState is null)
         {
-            var clientHackCheck = new PipelinedHackCheckEncryptor(target, this._hackCheckKeys);
-            target = clientHackCheck.Writer;
+            var useHackCheck = ShouldUseHackCheck(port);
+            if (useHackCheck)
+            {
+                var clientHackCheck = new PipelinedHackCheckEncryptor(target, this._hackCheckKeys);
+                target = clientHackCheck.Writer;
+            }
+
+            return new PipelinedXor32Encryptor(
+                new PipelinedSimpleModulusEncryptor(target, this._clientToServerKey, useCounter: false).Writer,
+                this._xor32Key);
         }
 
+        var autoClientHackCheck = new PipelinedAutoHackCheckEncryptor(target, this._hackCheckKeys, sharedHackCheckState);
         return new PipelinedXor32Encryptor(
-            new PipelinedSimpleModulusEncryptor(target, this._clientToServerKey, useCounter: false).Writer,
+            new PipelinedSimpleModulusEncryptor(autoClientHackCheck.Writer, this._clientToServerKey, useCounter: false).Writer,
             this._xor32Key);
     }
 
     /// <inheritdoc />
     public IPipelinedDecryptor CreateDecryptor(PipeReader source, DataDirection direction, int port)
     {
-        var useHackCheck = ShouldUseHackCheck(port);
+        var sharedHackCheckState = TryGetSharedHackCheckState();
         if (direction == DataDirection.ClientToServer)
         {
-            if (useHackCheck)
+            if (sharedHackCheckState is null)
             {
-                source = new PipelinedHackCheckDecryptor(source, this._hackCheckKeys).Reader;
+                var useHackCheck = ShouldUseHackCheck(port);
+                if (useHackCheck)
+                {
+                    source = new PipelinedHackCheckDecryptor(source, this._hackCheckKeys).Reader;
+                }
+
+                return new PipelinedXor32Decryptor(
+                    new PipelinedSimpleModulusDecryptor(source, this._clientToServerKey, useCounter: false).Reader,
+                    this._xor32Key);
             }
 
+            source = new PipelinedAutoHackCheckDecryptor(source, this._hackCheckKeys, sharedHackCheckState).Reader;
             return new PipelinedXor32Decryptor(
                 new PipelinedSimpleModulusDecryptor(source, this._clientToServerKey, useCounter: false).Reader,
                 this._xor32Key);
         }
 
-        if (useHackCheck)
+        if (sharedHackCheckState is null)
         {
-            source = new PipelinedHackCheckDecryptor(source, this._hackCheckKeys).Reader;
+            var useHackCheck = ShouldUseHackCheck(port);
+            if (useHackCheck)
+            {
+                source = new PipelinedHackCheckDecryptor(source, this._hackCheckKeys).Reader;
+            }
+
+            return new PipelinedSimpleModulusDecryptor(source, this._serverToClientKey, useCounter: false);
         }
 
+        source = new PipelinedAutoHackCheckDecryptor(source, this._hackCheckKeys, sharedHackCheckState).Reader;
         return new PipelinedSimpleModulusDecryptor(source, this._serverToClientKey, useCounter: false);
     }
 
@@ -181,6 +213,17 @@ public class Version097NetworkEncryptionFactoryPlugIn : INetworkEncryptionFactor
         }
 
         return port >= 55901 && port <= 55950;
+    }
+
+    private static HackCheckUsageState? TryGetSharedHackCheckState()
+    {
+        var context = Listener.CurrentContext.Value;
+        if (context is null)
+        {
+            return null;
+        }
+
+        return context.GetOrCreate(() => new HackCheckUsageState());
     }
 
     private static string? TryGetClientSerialFromConfiguration(IServiceProvider? serviceProvider)
