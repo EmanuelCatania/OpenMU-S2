@@ -43,6 +43,7 @@ public sealed class Connection : PacketPipeReaderBase, IConnection
     private readonly IPipelinedEncryptor? _encryptionPipe;
     private readonly ILogger<Connection> _logger;
     private readonly EndPoint _remoteEndPoint;
+    private int _firstPacketLogged;
 
     private IDuplexPipe? _duplexPipe;
     private bool _disconnected;
@@ -106,6 +107,10 @@ public sealed class Connection : PacketPipeReaderBase, IConnection
         try
         {
             ConnectionCounter.Add(1);
+            if (this._logger.IsEnabled(LogLevel.Information))
+            {
+                this._logger.LogInformation("Begin receiving packets from {remoteEndPoint}.", this._remoteEndPoint);
+            }
             await this.ReadSourceAsync().ConfigureAwait(false);
         }
         catch (OperationCanceledException)
@@ -201,6 +206,23 @@ public sealed class Connection : PacketPipeReaderBase, IConnection
     protected override async ValueTask<bool> ReadPacketAsync(ReadOnlySequence<byte> packet)
     {
         IncomingBytesCounter.Add(packet.Length);
+        if (this._logger.IsEnabled(LogLevel.Information) && Interlocked.CompareExchange(ref this._firstPacketLogged, 1, 0) == 0)
+        {
+            var prefixLength = (int)Math.Min(8, packet.Length);
+            Span<byte> headerBytes = stackalloc byte[8];
+            packet.Slice(0, prefixLength).CopyTo(headerBytes);
+            var header = headerBytes.Length > 0 ? headerBytes[0] : (byte)0;
+            var headerSize = ArrayExtensions.GetPacketHeaderSize(header);
+            var code = headerSize > 0 && headerBytes.Length > headerSize ? headerBytes[headerSize] : (byte)0;
+            var sub = headerSize > 0 && headerBytes.Length > headerSize + 1 ? headerBytes[headerSize + 1] : (byte)0;
+            this._logger.LogInformation(
+                "First packet received from {remoteEndPoint}. Header: 0x{header:X2}, Code: 0x{code:X2}, Sub: 0x{sub:X2}, Length: {length}",
+                this._remoteEndPoint,
+                ArrayExtensions.NormalizePacketHeader(header),
+                ArrayExtensions.NormalizePacketType(header, code),
+                sub,
+                packet.Length);
+        }
 
         using var activity = ActivitySource.CreateActivity("Read Packet", ActivityKind.Server);
         activity?.SetTag("remoteEndPoint", this._remoteEndPoint)
