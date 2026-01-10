@@ -92,7 +92,7 @@ public class UpdateStatsPlugIn097 : UpdateStatsBasePlugIn
             return ValueTask.CompletedTask;
         }
 
-        const int packetLength = 12;
+        const int packetLength = 11;
         int WritePacket()
         {
             var span = connection.Output.GetSpan(packetLength)[..packetLength];
@@ -101,9 +101,8 @@ public class UpdateStatsPlugIn097 : UpdateStatsBasePlugIn
             span[2] = 0x26;
             span[3] = type;
             BinaryPrimitives.WriteUInt16BigEndian(span.Slice(4, 2), life);
-            span[6] = 0;
-            span[7] = 0; // padding for client struct alignment
-            BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(8, 4), viewHp);
+            span[6] = 0; // flag
+            BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(7, 4), viewHp);
             return packetLength;
         }
 
