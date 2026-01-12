@@ -56,7 +56,22 @@ public class AddStatChatCommandPlugIn : IChatCommandPlugIn
                 return;
             }
 
-            await this._action.IncreaseStatsAsync(player, attribute, arguments.Amount).ConfigureAwait(false);
+            if (arguments.Amount > 1)
+            {
+                for (var i = 0; i < arguments.Amount; i++)
+                {
+                    if (!selectedCharacter.CanIncreaseStats(1))
+                    {
+                        return;
+                    }
+
+                    await this._action.IncreaseStatsAsync(player, attribute, 1).ConfigureAwait(false);
+                }
+
+                return;
+            }
+
+            await this._action.IncreaseStatsAsync(player, attribute, 1).ConfigureAwait(false);
         }
         catch (ArgumentException e)
         {
