@@ -13,10 +13,12 @@ using Microsoft.Extensions.Logging;
 internal static class PacketLogHelper
 {
     private const int PreviewBytes = 16;
+    private const string PacketLogEnvVar = "MU_PACKET_LOG";
+    private static readonly bool PacketLogEnabled = GetPacketLogEnabled();
 
     public static void LogPacket(ILogger logger, string label, ReadOnlySpan<byte> data, int length)
     {
-        if (!logger.IsEnabled(LogLevel.Information))
+        if (!PacketLogEnabled || !logger.IsEnabled(LogLevel.Information))
         {
             return;
         }
@@ -28,5 +30,13 @@ internal static class PacketLogHelper
             length,
             data.Length > 0 ? $"0x{data[0]:X2}" : "n/a",
             hex);
+    }
+
+    private static bool GetPacketLogEnabled()
+    {
+        var value = Environment.GetEnvironmentVariable(PacketLogEnvVar);
+        return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
     }
 }
