@@ -6,6 +6,7 @@ namespace MUnique.OpenMU.GameServer.RemoteView.World;
 
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using MUnique.OpenMU.GameServer.RemoteView;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.Views;
@@ -51,16 +52,16 @@ public class ShowHitPlugIn097 : IShowHitPlugIn
 
             await connection.SendAsync(() =>
             {
-                const int packetLength = 16;
+                const int packetLength = 15;
                 var span = connection.Output.GetSpan(packetLength)[..packetLength];
                 span[0] = 0xC1;
                 span[1] = (byte)packetLength;
                 span[2] = 0x15;
                 BinaryPrimitives.WriteUInt16BigEndian(span.Slice(3, 2), targetId);
                 BinaryPrimitives.WriteUInt16BigEndian(span.Slice(5, 2), healthDamage);
-                span[7] = 0; // padding for client struct alignment
-                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(8, 4), viewCurHp);
-                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(12, 4), viewDamageHp);
+                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(7, 4), viewCurHp);
+                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(11, 4), viewDamageHp);
+                PacketLogHelper.LogPacket(this._player.Logger, "15 Damage", span, packetLength);
                 return packetLength;
             }).ConfigureAwait(false);
 

@@ -6,6 +6,7 @@ namespace MUnique.OpenMU.GameServer.RemoteView.Character;
 
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using MUnique.OpenMU.GameServer.RemoteView;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.Views;
@@ -45,7 +46,7 @@ public class UpdateLevelPlugIn097 : IUpdateLevelPlugIn
 
         await connection.SendAsync(() =>
         {
-            const int packetLength = 48;
+            const int packetLength = 46;
             var span = connection.Output.GetSpan(packetLength)[..packetLength];
             span[0] = 0xC1;
             span[1] = (byte)packetLength;
@@ -72,9 +73,6 @@ public class UpdateLevelPlugIn097 : IUpdateLevelPlugIn
             offset += 2;
             BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(offset, 2), selectedCharacter.GetMaximumFruitPoints());
             offset += 2;
-            span[offset] = 0; // padding for client struct alignment
-            span[offset + 1] = 0;
-            offset += 2;
             BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(offset, 4), ClampToUInt32(selectedCharacter.LevelUpPoints));
             offset += 4;
             BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(offset, 4), ClampToUInt32(charStats[Stats.MaximumHealth]));
@@ -87,6 +85,7 @@ public class UpdateLevelPlugIn097 : IUpdateLevelPlugIn
             offset += 4;
             BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(offset, 4), viewNextExperience);
 
+            PacketLogHelper.LogPacket(this._player.Logger, "F3:05 LevelUp", span, packetLength);
             return packetLength;
         }).ConfigureAwait(false);
 

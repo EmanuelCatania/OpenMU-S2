@@ -10,6 +10,7 @@ using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.GameLogic.Views.Guild;
 using MUnique.OpenMU.GameLogic.Views.World;
+using MUnique.OpenMU.GameServer.RemoteView;
 using MUnique.OpenMU.GameServer.RemoteView.Character;
 using MUnique.OpenMU.Network;
 using MUnique.OpenMU.Network.Packets.ServerToClient;
@@ -114,6 +115,10 @@ public class NewPlayersInScopePlugIn095 : INewPlayersInScopePlugIn
 
             playerBlock.Rotation = transformedPlayer.Rotation.ToPacketByte();
             playerBlock.HeroState = transformedPlayer.SelectedCharacter.State.Convert();
+            if (this._player.ClientVersion.Season == 0 && this._player.ClientVersion.Episode == 97)
+            {
+                PacketLogHelper.LogPacket(this._player.Logger, "45 AddTransformedCharactersToScope075", span, size);
+            }
             return size;
         }
 
@@ -163,6 +168,10 @@ public class NewPlayersInScopePlugIn095 : INewPlayersInScopePlugIn
 
             playerBlock.Rotation = newPlayer.Rotation.ToPacketByte();
             playerBlock.HeroState = newPlayer.SelectedCharacter.State.Convert();
+            if (this._player.ClientVersion.Season == 0 && this._player.ClientVersion.Episode == 97)
+            {
+                PacketLogHelper.LogPacket(this._player.Logger, "12 AddCharactersToScope095", span, size);
+            }
             return size;
         }
 

@@ -8,6 +8,7 @@ using System.Buffers.Binary;
 using System.Collections.Frozen;
 using System.Runtime.InteropServices;
 using MUnique.OpenMU.AttributeSystem;
+using MUnique.OpenMU.GameServer.RemoteView;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.Network;
 using MUnique.OpenMU.GameLogic.Views.Character;
@@ -92,7 +93,7 @@ public class UpdateStatsPlugIn097 : UpdateStatsBasePlugIn
             return ValueTask.CompletedTask;
         }
 
-        const int packetLength = 12;
+        const int packetLength = 11;
         int WritePacket()
         {
             var span = connection.Output.GetSpan(packetLength)[..packetLength];
@@ -101,9 +102,9 @@ public class UpdateStatsPlugIn097 : UpdateStatsBasePlugIn
             span[2] = 0x26;
             span[3] = type;
             BinaryPrimitives.WriteUInt16BigEndian(span.Slice(4, 2), life);
-            span[6] = 0;
-            span[7] = 0; // padding for client struct alignment
-            BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(8, 4), viewHp);
+            span[6] = 0; // flag
+            BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(7, 4), viewHp);
+            PacketLogHelper.LogPacket(player.Logger, "26 Life", span, packetLength);
             return packetLength;
         }
 
@@ -130,6 +131,7 @@ public class UpdateStatsPlugIn097 : UpdateStatsBasePlugIn
             BinaryPrimitives.WriteUInt16BigEndian(span.Slice(6, 2), bp);
             BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(8, 4), viewMp);
             BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(12, 4), viewBp);
+            PacketLogHelper.LogPacket(player.Logger, "27 Mana", span, packetLength);
             return packetLength;
         }
 

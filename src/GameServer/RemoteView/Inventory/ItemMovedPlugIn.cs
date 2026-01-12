@@ -6,6 +6,7 @@ namespace MUnique.OpenMU.GameServer.RemoteView.Inventory;
 
 using System.Runtime.InteropServices;
 using MUnique.OpenMU.DataModel.Entities;
+using MUnique.OpenMU.GameServer.RemoteView;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Views.Inventory;
 using MUnique.OpenMU.Network;
@@ -57,6 +58,10 @@ public class ItemMovedPlugIn : IItemMovedPlugIn
 
             var actualSize = ItemMovedRef.GetRequiredSize(itemSize);
             span.Slice(0, actualSize).SetPacketSize();
+            if (this._player.ClientVersion.Season == 0 && this._player.ClientVersion.Episode == 97)
+            {
+                PacketLogHelper.LogPacket(this._player.Logger, "24 ItemMoved", span, actualSize);
+            }
             return actualSize;
         }
 

@@ -6,6 +6,7 @@ namespace MUnique.OpenMU.GameServer.RemoteView.Character;
 
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using MUnique.OpenMU.GameServer.RemoteView;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.Views;
@@ -62,19 +63,18 @@ public class AddExperiencePlugIn097 : IAddExperiencePlugIn
 
             await connection.SendAsync(() =>
             {
-                const int packetLength = 24;
+                const int packetLength = 21;
                 var span = connection.Output.GetSpan(packetLength)[..packetLength];
                 span[0] = 0xC3;
                 span[1] = (byte)packetLength;
                 span[2] = 0x9C;
                 BinaryPrimitives.WriteUInt16BigEndian(span.Slice(3, 2), id);
-                span[5] = 0; // padding for client struct alignment
-                BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(6, 2), sendExp);
-                BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(8, 2), 0);
-                BinaryPrimitives.WriteUInt16BigEndian(span.Slice(10, 2), damage);
-                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(12, 4), viewDamage);
-                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(16, 4), viewExperience);
-                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(20, 4), viewNextExperience);
+                BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(5, 2), sendExp);
+                BinaryPrimitives.WriteUInt16BigEndian(span.Slice(7, 2), damage);
+                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(9, 4), viewDamage);
+                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(13, 4), viewExperience);
+                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(17, 4), viewNextExperience);
+                PacketLogHelper.LogPacket(this._player.Logger, "9C RewardExperience", span, packetLength);
                 return packetLength;
             }).ConfigureAwait(false);
             damage = 0;
