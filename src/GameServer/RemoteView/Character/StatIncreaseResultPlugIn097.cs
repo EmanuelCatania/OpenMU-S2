@@ -86,6 +86,11 @@ public class StatIncreaseResultPlugIn097 : IStatIncreaseResultPlugIn
             PacketLogHelper.LogPacket(this._player.Logger, "F3:06 StatIncrease", span, packetLength);
             return packetLength;
         }).ConfigureAwait(false);
+
+        if (addedPoints > 1)
+        {
+            await this._player.InvokeViewPlugInAsync<IUpdateCharacterStatsPlugIn>(p => p.UpdateCharacterStatsAsync()).ConfigureAwait(false);
+        }
     }
 
     private static ushort GetUShort(float value)
