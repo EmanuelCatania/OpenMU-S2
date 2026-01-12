@@ -43,12 +43,50 @@ public class UpdateCharacterStatsPlugIn097 : IUpdateCharacterStatsPlugIn
         }
 
         var (viewExperience, viewNextExperience) = Version097ExperienceViewHelper.GetViewExperience(this._player);
-        // Avoid sending F3:03 on updates for 0.97; E0/E1 are enough and this prevents client-side cloning.
+        if (this._player.PlayerState.CurrentState == PlayerState.CharacterSelection)
+        {
+            await connection.SendAsync(WriteCharacterInformationPacket).ConfigureAwait(false);
+        }
 
         await connection.SendAsync(WriteNewCharacterInfoPacket).ConfigureAwait(false);
         await connection.SendAsync(WriteNewCharacterCalcPacket).ConfigureAwait(false);
 
         await this._player.InvokeViewPlugInAsync<IApplyKeyConfigurationPlugIn>(p => p.ApplyKeyConfigurationAsync()).ConfigureAwait(false);
+
+        int WriteCharacterInformationPacket()
+        {
+            const int packetLength = 48;
+            var span = connection.Output.GetSpan(packetLength)[..packetLength];
+            span[0] = 0xC3;
+            span[1] = (byte)packetLength;
+            span[2] = 0xF3;
+            span[3] = 0x03;
+            span[4] = this._player.Position.X;
+            span[5] = this._player.Position.Y;
+            span[6] = (byte)selectedCharacter.CurrentMap!.Number;
+            span[7] = this._player.Rotation.ToPacketByte();
+
+            BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(8, 4), viewExperience);
+            BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(12, 4), viewNextExperience);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(16, 2), (ushort)Math.Max(selectedCharacter.LevelUpPoints, 0));
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(18, 2), (ushort)attributes[Stats.BaseStrength]);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(20, 2), (ushort)attributes[Stats.BaseAgility]);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(22, 2), (ushort)attributes[Stats.BaseVitality]);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(24, 2), (ushort)attributes[Stats.BaseEnergy]);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(26, 2), (ushort)attributes[Stats.CurrentHealth]);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(28, 2), (ushort)attributes[Stats.MaximumHealth]);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(30, 2), (ushort)attributes[Stats.CurrentMana]);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(32, 2), (ushort)attributes[Stats.MaximumMana]);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(34, 2), (ushort)attributes[Stats.CurrentAbility]);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(36, 2), (ushort)attributes[Stats.MaximumAbility]);
+            BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(38, 4), (uint)this._player.Money);
+            span[42] = (byte)selectedCharacter.State.Convert();
+            span[43] = (byte)selectedCharacter.CharacterStatus.Convert();
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(44, 2), (ushort)selectedCharacter.UsedFruitPoints);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(46, 2), selectedCharacter.GetMaximumFruitPoints());
+            PacketLogHelper.LogPacket(this._player.Logger, "F3:03 CharacterInformation097", span, packetLength);
+            return packetLength;
+        }
 
         int WriteNewCharacterInfoPacket()
         {
