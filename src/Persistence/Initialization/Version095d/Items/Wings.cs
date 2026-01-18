@@ -105,10 +105,15 @@ public class Wings : WingsInitializerBase
             powerUp.BonusPerLevelTable = this._defenseBonusByLevelTable;
         }
 
-        var classes = darkWizardClassLevel == 1 ? CharacterClasses.DarkWizard | CharacterClasses.MagicGladiator : CharacterClasses.None;
-        classes |= darkKnightClassLevel == 1 ? CharacterClasses.DarkKnight | CharacterClasses.MagicGladiator : CharacterClasses.None;
-        classes |= elfClassLevel == 1 ? CharacterClasses.FairyElf : CharacterClasses.None;
-        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClasses(classes);
+        var magicGladiatorClassLevel = (darkWizardClassLevel == 1 || darkKnightClassLevel == 1) ? 1 : 0;
+        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClasses(
+            darkWizardClassLevel,
+            darkKnightClassLevel,
+            elfClassLevel,
+            magicGladiatorClassLevel,
+            0,
+            0,
+            0);
         qualifiedCharacterClasses.ToList().ForEach(wing.QualifiedCharacters.Add);
 
         // add CanFly Attribute to all wings

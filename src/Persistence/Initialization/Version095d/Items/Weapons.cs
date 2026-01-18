@@ -207,7 +207,7 @@ internal class Weapons : InitializerBase
         }
 
         item.Durability = durability;
-        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClasses(wizardClass == 1, knightClass == 1, elfClass == 1);
+        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClasses(wizardClass, knightClass, elfClass, 0, 0, 0, 0);
         qualifiedCharacterClasses.ToList().ForEach(item.QualifiedCharacters.Add);
 
         var damagePowerUp = this.CreateItemBasePowerUpDefinition(Stats.AmmunitionDamageBonus, 0f, AggregateType.AddRaw);
@@ -278,11 +278,15 @@ internal class Weapons : InitializerBase
         }
 
         item.Durability = durability;
-        var classes = wizardClass == 1 ? CharacterClasses.DarkWizard | CharacterClasses.MagicGladiator : CharacterClasses.None;
-        classes |= knightClass == 1 ? CharacterClasses.DarkKnight | CharacterClasses.MagicGladiator : CharacterClasses.None;
-        classes |= elfClass == 1 ? CharacterClasses.FairyElf : CharacterClasses.None;
-        classes |= magicGladiatorClass == 1 ? CharacterClasses.MagicGladiator : CharacterClasses.None;
-        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClasses(classes);
+        var magicGladiatorRank = (magicGladiatorClass == 1 || wizardClass == 1 || knightClass == 1) ? 1 : 0;
+        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClasses(
+            wizardClass,
+            knightClass,
+            elfClass,
+            magicGladiatorRank,
+            0,
+            0,
+            0);
         qualifiedCharacterClasses.ToList().ForEach(item.QualifiedCharacters.Add);
 
         var minDamagePowerUp = this.CreateItemBasePowerUpDefinition(Stats.MinimumPhysBaseDmgByWeapon, minimumDamage, AggregateType.AddRaw);

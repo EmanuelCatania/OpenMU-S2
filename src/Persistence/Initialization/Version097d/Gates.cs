@@ -61,6 +61,7 @@ public class Gates : InitializerBase
         this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(21, "Tarkan", 8000, 140, gates[57]));
         this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(22, "Tarkan2", 8500, 140, gates[77]));
         this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(23, "Icarus", 9000, 170, gates[63]));
+        this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(24, "Exile", 50000000, 300, gates[78]));
     }
 
     private WarpInfo CreateWarpInfo(ushort index, string name, int costs, int levelRequirement, ExitGate gate)
@@ -161,6 +162,9 @@ public class Gates : InitializerBase
         targetGates.Add(41, this.CreateExitGate(maps[4], 8, 85, 9, 87, 1));
         targetGates.Add(65, this.CreateExitGate(maps[4], 17, 249, 19, 249, 1));
 
+        // Exile
+        targetGates.Add(78, this.CreateExitGate(maps[5], 1, 7, 6, 12, 0, true));
+
         // Icarus (0.97 gate list)
         targetGates.Add(63, this.CreateExitGate(maps[10], 14, 13, 16, 13, 5));
 
@@ -235,6 +239,7 @@ public class Gates : InitializerBase
         maps[4].EnterGates.Add(this.CreateEnterGate(43, targetGates[44], 162, 0, 166, 1, 15));
         maps[3].EnterGates.Add(this.CreateEnterGate(45, targetGates[46], 242, 240, 245, 243, 60));
         maps[7].EnterGates.Add(this.CreateEnterGate(47, targetGates[48], 9, 9, 11, 12, 60));
+        maps[0].EnterGates.Add(this.CreateEnterGate(78, targetGates[78], 236, 239, 236, 239, 300));
 
         // Atlans <-> Tarkan
         maps[7].EnterGates.Add(this.CreateEnterGate(53, targetGates[54], 14, 225, 15, 230, 130));
