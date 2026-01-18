@@ -51,13 +51,10 @@ public class RespawnAfterDeathPlugIn097 : IRespawnAfterDeathPlugIn
         var currentHealth = GetUShort(attributes[Stats.CurrentHealth]);
         var currentMana = GetUShort(attributes[Stats.CurrentMana]);
         var currentAbility = GetUShort(attributes[Stats.CurrentAbility]);
-        var viewHp = ClampToUInt32(attributes[Stats.CurrentHealth]);
-        var viewMp = ClampToUInt32(attributes[Stats.CurrentMana]);
-        var viewBp = ClampToUInt32(attributes[Stats.CurrentAbility]);
 
         await connection.SendAsync(() =>
         {
-            const int packetLength = 34;
+            const int packetLength = 22;
             var span = connection.Output.GetSpan(packetLength)[..packetLength];
             span[0] = 0xC3;
             span[1] = (byte)packetLength;
@@ -72,9 +69,6 @@ public class RespawnAfterDeathPlugIn097 : IRespawnAfterDeathPlugIn
             BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(12, 2), currentAbility);
             BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(14, 4), ClampToUInt32(selectedCharacter.Experience));
             BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(18, 4), ClampToUInt32(this._player.Money));
-            BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(22, 4), viewHp);
-            BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(26, 4), viewMp);
-            BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(30, 4), viewBp);
             return packetLength;
         }).ConfigureAwait(false);
     }

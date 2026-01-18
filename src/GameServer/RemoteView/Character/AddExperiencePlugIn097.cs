@@ -44,10 +44,10 @@ public class AddExperiencePlugIn097 : IAddExperiencePlugIn
         }
 
         var remainingExperience = exp;
-        ushort damage = 0;
+        uint damage = 0;
         if (obj is not null && obj.Id != obj.LastDeath?.KillerId)
         {
-            damage = (ushort)Math.Min(obj.LastDeath?.FinalHit.HealthDamage ?? 0, ushort.MaxValue);
+            damage = (uint)Math.Min(obj.LastDeath?.FinalHit.HealthDamage ?? 0, uint.MaxValue);
         }
 
         var id = (ushort)(obj?.GetId(this._player) ?? 0);
@@ -57,9 +57,8 @@ public class AddExperiencePlugIn097 : IAddExperiencePlugIn
         }
         while (remainingExperience > 0)
         {
-            ushort sendExp = remainingExperience > ushort.MaxValue ? ushort.MaxValue : (ushort)remainingExperience;
+            var sendExp = (uint)remainingExperience;
             var (viewExperience, viewNextExperience) = Version097ExperienceViewHelper.GetViewExperience(this._player);
-            var viewDamage = (uint)damage;
 
             await connection.SendAsync(() =>
             {
@@ -69,16 +68,15 @@ public class AddExperiencePlugIn097 : IAddExperiencePlugIn
                 span[1] = (byte)packetLength;
                 span[2] = 0x9C;
                 BinaryPrimitives.WriteUInt16BigEndian(span.Slice(3, 2), id);
-                BinaryPrimitives.WriteUInt16BigEndian(span.Slice(5, 2), sendExp);
-                BinaryPrimitives.WriteUInt16BigEndian(span.Slice(7, 2), damage);
-                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(9, 4), viewDamage);
+                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(5, 4), sendExp);
+                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(9, 4), damage);
                 BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(13, 4), viewExperience);
                 BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(17, 4), viewNextExperience);
                 PacketLogHelper.LogPacket(this._player.Logger, "9C RewardExperience", span, packetLength);
                 return packetLength;
             }).ConfigureAwait(false);
             damage = 0;
-            remainingExperience -= sendExp;
+            remainingExperience = 0;
         }
     }
 }
