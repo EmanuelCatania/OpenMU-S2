@@ -144,7 +144,10 @@ public class JsonQueryBuilder
     private void AddCollection(INavigation navigation, IEntityType entityType, StringBuilder stringBuilder, string parentAlias)
     {
         var keyProperty = navigation.ForeignKey.Properties[0];
-        var navigationType = keyProperty.DeclaringEntityType;
+        if (keyProperty.DeclaringType is not IEntityType navigationType)
+        {
+            return;
+        }
 #pragma warning disable EF1001 // Internal EF Core API usage.
         if (navigationType.FindDeclaredPrimaryKey() is not { } primaryKey)
         {

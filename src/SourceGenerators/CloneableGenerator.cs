@@ -97,9 +97,10 @@ public class CloneableGenerator : ISourceGenerator
                         public partial class {className} : IAssignable, IAssignable<{className}>, ICloneable<{className}>
                         """);
         sb.AppendLine("{");
+        var cloneModifier = isInheritedClonable ? "override" : "virtual";
         sb.AppendLine($"""
                           /// <inheritdoc />
-                          public virtual {className} Clone(GameConfiguration gameConfiguration)
+                          public {cloneModifier} {className} Clone(GameConfiguration gameConfiguration)
                       """);
         sb.AppendLine("    {");
         sb.AppendLine($"""

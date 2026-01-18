@@ -207,7 +207,7 @@ internal class Weapons : InitializerBase
         }
 
         item.Durability = durability;
-        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClasses(wizardClass, knightClass, elfClass, 0, 0, 0, 0);
+        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClassesByRank(wizardClass, knightClass, elfClass, 0, 0, 0, 0);
         qualifiedCharacterClasses.ToList().ForEach(item.QualifiedCharacters.Add);
 
         var damagePowerUp = this.CreateItemBasePowerUpDefinition(Stats.AmmunitionDamageBonus, 0f, AggregateType.AddRaw);
@@ -279,7 +279,7 @@ internal class Weapons : InitializerBase
 
         item.Durability = durability;
         var magicGladiatorRank = (magicGladiatorClass == 1 || wizardClass == 1 || knightClass == 1) ? 1 : 0;
-        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClasses(
+        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClassesByRank(
             wizardClass,
             knightClass,
             elfClass,

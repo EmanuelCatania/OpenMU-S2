@@ -16,6 +16,7 @@
     <PackageTags>MUnique OpenMU MUOnline Network Packets</PackageTags>
     <PackageId>MUnique.OpenMU.Network.Packets</PackageId>
     <Description>This package contains message structs for the MMORPG "MU Online", which are primarily focused on the english version of Season 6 Episode 3.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageVersion>0.9.8</PackageVersion>
     <Version>0.9.8</Version>
   </PropertyGroup>
@@ -34,6 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
     <Content Include="**/*.xml" copyToOutput="true">
       <IncludeInPackage>true</IncludeInPackage>
       <CopyToOutput>true</CopyToOutput>

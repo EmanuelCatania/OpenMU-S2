@@ -7,7 +7,7 @@ namespace MUnique.OpenMU.Web.Shared.Services;
 using MUnique.OpenMU.Interfaces;
 
 /// <summary>
-/// Services for the <see cref="LoggedIn"/> page.
+/// Services for the logged-in accounts page.
 /// </summary>
 public class LoggedInAccountService : IDataService<LoggedInAccount>, ISupportDataChangedNotification
 {

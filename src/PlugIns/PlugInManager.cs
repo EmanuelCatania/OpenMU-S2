@@ -33,6 +33,7 @@ public class PlugInManager
     /// <param name="configurations">The configurations.</param>
     /// <param name="loggerFactory">The logger factory.</param>
     /// <param name="serviceProvider">The service provider.</param>
+    /// <param name="customConfigReferenceHandler">The reference handler for custom plugin configuration JSON.</param>
     public PlugInManager(ICollection<PlugInConfiguration>? configurations, ILoggerFactory loggerFactory, IServiceProvider? serviceProvider, ReferenceHandler? customConfigReferenceHandler)
     {
         _ = typeof(Nito.AsyncEx.AsyncReaderWriterLock); // Ensure Nito.AsyncEx.Coordination is loaded so it will be available in proxy generation.

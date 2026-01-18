@@ -299,7 +299,7 @@ internal class ChaosMixes : InitializerBase
     private ItemCrafting FruitCrafting()
     {
         var fruitCrafting = this.Context.CreateNew<ItemCrafting>();
-        fruitCrafting.Name = "Fruit";
+        fruitCrafting.Name = "Fruits";
         fruitCrafting.Number = 6;
         var craftingSettings = this.Context.CreateNew<SimpleCraftingSettings>();
         fruitCrafting.SimpleCraftingSettings = craftingSettings;
@@ -323,7 +323,7 @@ internal class ChaosMixes : InitializerBase
         craftingSettings.RequiredItems.Add(creation);
 
         var fruit = this.Context.CreateNew<ItemCraftingResultItem>();
-        fruit.ItemDefinition = this.GameConfiguration.Items.First(i => i.Name == "Fruit");
+        fruit.ItemDefinition = this.GameConfiguration.Items.First(i => i.Name == "Fruits");
         craftingSettings.ResultItems.Add(fruit);
 
         return fruitCrafting;

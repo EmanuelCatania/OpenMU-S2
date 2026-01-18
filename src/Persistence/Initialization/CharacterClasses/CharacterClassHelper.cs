@@ -46,8 +46,7 @@ public static class CharacterClassHelper
     /// <param name="summonerClass">Class rank of the summoner class.</param>
     /// <param name="ragefighterClass">Class rank of the ragefighter class.</param>
     /// <returns>The corresponding <see cref="CharacterClass"/>es of the provided class ranks.</returns>
-    [Obsolete("Use the overload with the CharacterClasses enum instead.")]
-    public static IEnumerable<CharacterClass> DetermineCharacterClasses(this GameConfiguration gameConfiguration, int wizardClass, int knightClass, int elfClass, int magicGladiatorClass, int darkLordClass, int summonerClass, int ragefighterClass)
+    public static IEnumerable<CharacterClass> DetermineCharacterClassesByRank(this GameConfiguration gameConfiguration, int wizardClass, int knightClass, int elfClass, int magicGladiatorClass, int darkLordClass, int summonerClass, int ragefighterClass)
     {
         var characterClasses = gameConfiguration.CharacterClasses;
         IEnumerable<CharacterClass> DetermineClass(int classValue, CharacterClassNumber masterClass, CharacterClassNumber? secondClass, CharacterClassNumber firstClass)
@@ -83,6 +82,24 @@ public static class CharacterClassHelper
         result.AddRange(DetermineClass(summonerClass, CharacterClassNumber.DimensionMaster, CharacterClassNumber.BloodySummoner, CharacterClassNumber.Summoner));
         result.AddRange(DetermineClass(ragefighterClass, CharacterClassNumber.FistMaster, null, CharacterClassNumber.RageFighter));
         return result;
+    }
+
+    /// <summary>
+    /// Determines the <see cref="CharacterClass"/>es, depending on the given class ranks which are provided by original configuration files.
+    /// </summary>
+    /// <param name="gameConfiguration">The game configuration which contains the character classes.</param>
+    /// <param name="wizardClass">Class rank of the wizard class.</param>
+    /// <param name="knightClass">Class rank of the knight class.</param>
+    /// <param name="elfClass">Class rank of the elf class.</param>
+    /// <param name="magicGladiatorClass">Class rank of the magic gladiator class.</param>
+    /// <param name="darkLordClass">Class rank of the dark lord class.</param>
+    /// <param name="summonerClass">Class rank of the summoner class.</param>
+    /// <param name="ragefighterClass">Class rank of the ragefighter class.</param>
+    /// <returns>The corresponding <see cref="CharacterClass"/>es of the provided class ranks.</returns>
+    [Obsolete("Use the overload with the CharacterClasses enum instead.")]
+    public static IEnumerable<CharacterClass> DetermineCharacterClasses(this GameConfiguration gameConfiguration, int wizardClass, int knightClass, int elfClass, int magicGladiatorClass, int darkLordClass, int summonerClass, int ragefighterClass)
+    {
+        return DetermineCharacterClassesByRank(gameConfiguration, wizardClass, knightClass, elfClass, magicGladiatorClass, darkLordClass, summonerClass, ragefighterClass);
     }
 
     /// <summary>

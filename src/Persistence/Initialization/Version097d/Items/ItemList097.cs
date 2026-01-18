@@ -406,7 +406,7 @@ internal sealed class ItemList097Importer : InitializerBase
                 if (existingItem.QualifiedCharacters.Count == 0
                     && (entry.WizardClass > 0 || entry.KnightClass > 0 || entry.ElfClass > 0 || entry.MagicGladiatorClass > 0))
                 {
-                    var qualifiedClasses = this.GameConfiguration.DetermineCharacterClasses(
+                    var qualifiedClasses = this.GameConfiguration.DetermineCharacterClassesByRank(
                         entry.WizardClass,
                         entry.KnightClass,
                         entry.ElfClass,
@@ -437,7 +437,7 @@ internal sealed class ItemList097Importer : InitializerBase
 
             if (entry.WizardClass > 0 || entry.KnightClass > 0 || entry.ElfClass > 0 || entry.MagicGladiatorClass > 0)
             {
-                var qualifiedClasses = this.GameConfiguration.DetermineCharacterClasses(
+                var qualifiedClasses = this.GameConfiguration.DetermineCharacterClassesByRank(
                     entry.WizardClass,
                     entry.KnightClass,
                     entry.ElfClass,

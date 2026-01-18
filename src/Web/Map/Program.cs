@@ -5,6 +5,7 @@
 namespace MUnique.OpenMU.Web.Map;
 
 using System.ComponentModel;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MUnique.OpenMU.GameLogic;
@@ -20,14 +21,33 @@ public class Program
     /// <param name="args">The arguments.</param>
     public static void Main(string[] args)
     {
-        var host = Host.CreateDefaultBuilder(args)
-            .ConfigureServices(serviceCollection =>
-            {
-                serviceCollection.AddSingleton<IObservableGameServer, NullGameServer>();
-                serviceCollection.AddHostedService<MapApp>();
-            })
-            .Build();
-        host.Run();
+        const int defaultPort = 4800;
+
+        var builder = WebApplication.CreateBuilder(args);
+        builder.Services.AddSingleton<IObservableGameServer, NullGameServer>();
+        builder.Services.AddControllers();
+        builder.AddMapApp();
+
+        var app = builder.Build();
+        app.Urls.Add($"http://*:{defaultPort}");
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+        else
+        {
+            app.UseExceptionHandler("/Error", createScopeForErrors: true);
+        }
+
+        app.UseStaticFiles();
+        app.UseAntiforgery();
+
+        app.MapRazorComponents<App>()
+            .AddInteractiveServerRenderMode();
+        app.MapControllers();
+
+        app.Run();
     }
 
     /// <summary>

@@ -335,7 +335,7 @@ internal class Weapons : InitializerBase
         }
 
         item.Durability = durability;
-        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClasses(wizardClass, knightClass, elfClass, magicGladiatorClass, darkLordClass, summonerClass, ragefighterClass);
+        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClassesByRank(wizardClass, knightClass, elfClass, magicGladiatorClass, darkLordClass, summonerClass, ragefighterClass);
         qualifiedCharacterClasses.ToList().ForEach(item.QualifiedCharacters.Add);
 
         if (height == 1) // bolts and arrows

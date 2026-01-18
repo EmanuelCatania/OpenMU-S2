@@ -106,7 +106,7 @@ public class Wings : WingsInitializerBase
         }
 
         var magicGladiatorClassLevel = (darkWizardClassLevel == 1 || darkKnightClassLevel == 1) ? 1 : 0;
-        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClasses(
+        var qualifiedCharacterClasses = this.GameConfiguration.DetermineCharacterClassesByRank(
             darkWizardClassLevel,
             darkKnightClassLevel,
             elfClassLevel,

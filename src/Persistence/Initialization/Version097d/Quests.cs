@@ -42,7 +42,7 @@ internal class Quests : InitializerBase
         this.TreasuresOfMu(CharacterClassNumber.DarkWizard, SoulShardOfWizardNumber);
     }
 
-    private CharacterClass? GetCharacterClass(CharacterClassNumber characterClass)
+    private CharacterClass? FindCharacterClass(CharacterClassNumber characterClass)
     {
         return this.GameConfiguration.CharacterClasses.FirstOrDefault(c => c.Number == (byte)characterClass);
     }
@@ -58,7 +58,7 @@ internal class Quests : InitializerBase
         treasuresOfMu.Number = 1;
         treasuresOfMu.RequiredStartMoney = 2000000;
         treasuresOfMu.MinimumCharacterLevel = 150;
-        treasuresOfMu.QualifiedCharacter = this.GetCharacterClass(characterClass);
+        treasuresOfMu.QualifiedCharacter = this.FindCharacterClass(characterClass);
         treasuresOfMu.Name = $"Treasures of MU ({treasuresOfMu.QualifiedCharacter?.Name})";
 
         this.AddItemRequirement(treasuresOfMu, 14, itemNumber, 0, 62, 76, 1000);
@@ -84,7 +84,7 @@ internal class Quests : InitializerBase
         findScrollOfEmperor.Number = 0;
         findScrollOfEmperor.RequiredStartMoney = 1000000;
         findScrollOfEmperor.MinimumCharacterLevel = 150;
-        findScrollOfEmperor.QualifiedCharacter = this.GetCharacterClass(characterClass);
+        findScrollOfEmperor.QualifiedCharacter = this.FindCharacterClass(characterClass);
         findScrollOfEmperor.Name = $"Find the 'Scroll of Emperor' ({findScrollOfEmperor.QualifiedCharacter?.Name})";
 
         this.AddItemRequirement(findScrollOfEmperor, 14, ScrollOfEmperorNumber, 0, 45, 60, 1000);
