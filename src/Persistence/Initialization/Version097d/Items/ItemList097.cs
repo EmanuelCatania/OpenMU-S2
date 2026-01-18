@@ -12,6 +12,7 @@ using System.Linq;
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.DataModel.Entities;
+using MUnique.OpenMU.Persistence.Initialization.CharacterClasses;
 using MUnique.OpenMU.Persistence.Initialization.Items;
 using Version095dItems = MUnique.OpenMU.Persistence.Initialization.Version095d.Items;
 
