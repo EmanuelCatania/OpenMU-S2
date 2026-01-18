@@ -109,6 +109,7 @@ internal class Quests : InitializerBase
         var itemRequirement = this.Context.CreateNew<QuestItemRequirement>();
         itemRequirement.MinimumNumber = 1;
         itemRequirement.Item = this.GameConfiguration.Items.First(item => item.Group == itemGroup && item.Number == itemNumber);
+        itemRequirement.Item.DropsFromMonsters = false;
 
         var dropItemGroup = this.Context.CreateNew<DropItemGroup>();
         dropItemGroup.SetGuid(quest.Number, itemNumber, quest.QualifiedCharacter?.Number ?? 0);

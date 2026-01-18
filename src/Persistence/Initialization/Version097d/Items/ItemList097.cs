@@ -159,15 +159,14 @@ internal static class ItemList097
         }
 
         var slot = ResolveSlot(group, slotValue, name);
-        var dropLevel = GetByte(columns, 13);
-        var durability = GetInt(columns, 17);
+        var classStartIndex = GetClassStartIndex(group, columns.Length);
+        var (dropLevelIndex, durabilityIndex) = GetDropLevelAndDurabilityIndex(group, classStartIndex);
+        var dropLevel = GetByte(columns, dropLevelIndex);
+        var durability = GetInt(columns, durabilityIndex);
         var isAmmunition = durability < 0
             || name.Contains("arrow", StringComparison.OrdinalIgnoreCase)
             || name.Contains("bolt", StringComparison.OrdinalIgnoreCase);
-        var wizardClass = GetByte(columns, 26);
-        var knightClass = GetByte(columns, 27);
-        var elfClass = GetByte(columns, 28);
-        var magicGladiatorClass = GetByte(columns, 29);
+        var (wizardClass, knightClass, elfClass, magicGladiatorClass) = GetClassFlags(columns, classStartIndex);
 
         entry = new ItemListEntry(
             group,
@@ -186,6 +185,47 @@ internal static class ItemList097
             magicGladiatorClass);
 
         return true;
+    }
+
+    private static int GetClassStartIndex(byte group, int columnCount)
+    {
+        if (group == (byte)ItemGroups.Misc2 || columnCount < 20)
+        {
+            return -1;
+        }
+
+        return columnCount - 4;
+    }
+
+    private static (int DropLevelIndex, int DurabilityIndex) GetDropLevelAndDurabilityIndex(byte group, int classStartIndex)
+    {
+        return ((ItemGroups)group) switch
+        {
+            ItemGroups.Misc1 => (classStartIndex - 7, classStartIndex - 6),
+            ItemGroups.Orbs => (13, 15),
+            ItemGroups.Shields => (13, 16),
+            ItemGroups.Helm => (13, 16),
+            ItemGroups.Armor => (13, 16),
+            ItemGroups.Pants => (13, 16),
+            ItemGroups.Gloves => (13, 16),
+            ItemGroups.Boots => (13, 16),
+            ItemGroups.Misc2 => (14, -1),
+            _ => (13, 17),
+        };
+    }
+
+    private static (byte WizardClass, byte KnightClass, byte ElfClass, byte MagicGladiatorClass) GetClassFlags(string[] columns, int classStartIndex)
+    {
+        if (classStartIndex < 0)
+        {
+            return (0, 0, 0, 0);
+        }
+
+        return (
+            GetByte(columns, classStartIndex),
+            GetByte(columns, classStartIndex + 1),
+            GetByte(columns, classStartIndex + 2),
+            GetByte(columns, classStartIndex + 3));
     }
 
     private static byte ResolveSlot(byte group, int slotValue, string name)
@@ -395,12 +435,25 @@ internal sealed class ItemList097Importer : InitializerBase
 
         foreach (var entry in entries)
         {
+            var suppressMonsterDrop = ShouldSuppressMonsterDrop(entry);
             if (existingItems.Contains((entry.Group, entry.Number)))
             {
                 var existingItem = this.GameConfiguration.Items.First(item => item.Group == entry.Group && item.Number == entry.Number);
                 if (existingItem.ItemSlot is null && entry.Slot != byte.MaxValue)
                 {
                     existingItem.ItemSlot = this.GetSlotType(entry);
+                }
+
+                if (existingItem.Group == (byte)ItemGroups.Misc1
+                    && existingItem.Number == 20
+                    && entry.Durability > 0)
+                {
+                    existingItem.Durability = (byte)Math.Min(byte.MaxValue, entry.Durability);
+                }
+
+                if (suppressMonsterDrop)
+                {
+                    existingItem.DropsFromMonsters = false;
                 }
 
                 if (existingItem.QualifiedCharacters.Count == 0
@@ -426,7 +479,7 @@ internal sealed class ItemList097Importer : InitializerBase
             item.Number = entry.Number;
             item.Width = entry.Width;
             item.Height = entry.Height;
-            item.DropsFromMonsters = entry.DropsFromMonsters;
+            item.DropsFromMonsters = entry.DropsFromMonsters && !suppressMonsterDrop;
             item.DropLevel = entry.DropLevel;
             item.Durability = entry.Durability < 0 ? (byte)255 : (byte)Math.Min(byte.MaxValue, entry.Durability);
             item.IsAmmunition = entry.IsAmmunition;
@@ -507,6 +560,16 @@ internal sealed class ItemList097Importer : InitializerBase
         }
 
         return Version095dItems.Constants.MaximumItemLevel;
+    }
+
+    private static bool ShouldSuppressMonsterDrop(ItemListEntry entry)
+    {
+        if (entry.Group != (byte)ItemGroups.Misc2)
+        {
+            return false;
+        }
+
+        return entry.Number is 15 or 23 or 24 or 25 or 26;
     }
 
     private static bool IsNonUpgradeableConsumable(string name)
