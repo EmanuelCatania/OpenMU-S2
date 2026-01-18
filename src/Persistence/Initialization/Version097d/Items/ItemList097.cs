@@ -18,6 +18,7 @@ using Version095dItems = MUnique.OpenMU.Persistence.Initialization.Version095d.I
 internal static class ItemList097
 {
     private const string ItemListRelativePath = "Version097d/Items/ItemList097.dat";
+    private const byte NoSlot = byte.MaxValue;
 
     public static HashSet<(byte Group, short Number)> LoadAllowedItems()
     {
@@ -146,7 +147,7 @@ internal static class ItemList097
             return false;
         }
 
-        var slot = GetByte(columns, 1);
+        var slotValue = GetInt(columns, 1);
         var width = GetByte(columns, 3);
         var height = GetByte(columns, 4);
         var dropsFromMonsters = GetByte(columns, 7) != 0;
@@ -156,11 +157,16 @@ internal static class ItemList097
             return false;
         }
 
+        var slot = ResolveSlot(group, slotValue, name);
         var dropLevel = GetByte(columns, 13);
         var durability = GetInt(columns, 17);
         var isAmmunition = durability < 0
             || name.Contains("arrow", StringComparison.OrdinalIgnoreCase)
             || name.Contains("bolt", StringComparison.OrdinalIgnoreCase);
+        var wizardClass = GetByte(columns, 26);
+        var knightClass = GetByte(columns, 27);
+        var elfClass = GetByte(columns, 28);
+        var magicGladiatorClass = GetByte(columns, 29);
 
         entry = new ItemListEntry(
             group,
@@ -172,9 +178,79 @@ internal static class ItemList097
             name,
             dropLevel,
             durability,
-            isAmmunition);
+            isAmmunition,
+            wizardClass,
+            knightClass,
+            elfClass,
+            magicGladiatorClass);
 
         return true;
+    }
+
+    private static byte ResolveSlot(byte group, int slotValue, string name)
+    {
+        if (slotValue > 0)
+        {
+            return slotValue >= byte.MaxValue ? byte.MaxValue : (byte)slotValue;
+        }
+
+        switch ((ItemGroups)group)
+        {
+            case ItemGroups.Shields:
+                return 1;
+            case ItemGroups.Helm:
+                return 2;
+            case ItemGroups.Armor:
+                return 3;
+            case ItemGroups.Pants:
+                return 4;
+            case ItemGroups.Gloves:
+                return 5;
+            case ItemGroups.Boots:
+                return 6;
+            case ItemGroups.Orbs:
+                return name.StartsWith("Wings of", StringComparison.OrdinalIgnoreCase) ? (byte)7 : NoSlot;
+            case ItemGroups.Misc1:
+                if (IsPet(name))
+                {
+                    return 8;
+                }
+
+                if (IsPendant(name))
+                {
+                    return 9;
+                }
+
+                if (IsRing(name))
+                {
+                    return 10;
+                }
+
+                return NoSlot;
+            case ItemGroups.Misc2:
+            case ItemGroups.Scrolls:
+                return NoSlot;
+            default:
+                return 0;
+        }
+    }
+
+    private static bool IsPet(string name)
+    {
+        return name.StartsWith("Guardian Angel", StringComparison.OrdinalIgnoreCase)
+            || name.StartsWith("Imp", StringComparison.OrdinalIgnoreCase)
+            || name.StartsWith("Horn of", StringComparison.OrdinalIgnoreCase)
+            || name.Contains("Dinorant", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsRing(string name)
+    {
+        return name.Contains("Ring", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsPendant(string name)
+    {
+        return name.Contains("Pendant", StringComparison.OrdinalIgnoreCase);
     }
 
     private static byte GetByte(string[] columns, int index)
@@ -292,7 +368,11 @@ internal readonly record struct ItemListEntry(
     string Name,
     byte DropLevel,
     int Durability,
-    bool IsAmmunition);
+    bool IsAmmunition,
+    byte WizardClass,
+    byte KnightClass,
+    byte ElfClass,
+    byte MagicGladiatorClass);
 
 internal sealed class ItemList097Importer : InitializerBase
 {
@@ -316,6 +396,26 @@ internal sealed class ItemList097Importer : InitializerBase
         {
             if (existingItems.Contains((entry.Group, entry.Number)))
             {
+                var existingItem = this.GameConfiguration.Items.First(item => item.Group == entry.Group && item.Number == entry.Number);
+                if (existingItem.ItemSlot is null && entry.Slot != byte.MaxValue)
+                {
+                    existingItem.ItemSlot = this.GetSlotType(entry);
+                }
+
+                if (existingItem.QualifiedCharacters.Count == 0
+                    && (entry.WizardClass > 0 || entry.KnightClass > 0 || entry.ElfClass > 0 || entry.MagicGladiatorClass > 0))
+                {
+                    var qualifiedClasses = this.GameConfiguration.DetermineCharacterClasses(
+                        entry.WizardClass,
+                        entry.KnightClass,
+                        entry.ElfClass,
+                        entry.MagicGladiatorClass,
+                        0,
+                        0,
+                        0);
+                    qualifiedClasses.ToList().ForEach(existingItem.QualifiedCharacters.Add);
+                }
+
                 continue;
             }
 
@@ -334,6 +434,19 @@ internal sealed class ItemList097Importer : InitializerBase
             item.SetGuid(item.Group, item.Number);
             this.ApplyTemplateOptions(item);
 
+            if (entry.WizardClass > 0 || entry.KnightClass > 0 || entry.ElfClass > 0 || entry.MagicGladiatorClass > 0)
+            {
+                var qualifiedClasses = this.GameConfiguration.DetermineCharacterClasses(
+                    entry.WizardClass,
+                    entry.KnightClass,
+                    entry.ElfClass,
+                    entry.MagicGladiatorClass,
+                    0,
+                    0,
+                    0);
+                qualifiedClasses.ToList().ForEach(item.QualifiedCharacters.Add);
+            }
+
             this.GameConfiguration.Items.Add(item);
             existingItems.Add((entry.Group, entry.Number));
         }
@@ -341,6 +454,11 @@ internal sealed class ItemList097Importer : InitializerBase
 
     private ItemSlotType? GetSlotType(ItemListEntry entry)
     {
+        if (entry.Slot == byte.MaxValue)
+        {
+            return null;
+        }
+
         if (entry.Slot <= 1 && entry.Group <= (byte)ItemGroups.Staff)
         {
             var dualSlot = this.GameConfiguration.ItemSlotTypes

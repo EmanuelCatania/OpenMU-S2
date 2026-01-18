@@ -69,7 +69,7 @@ public class Potions : InitializerBase
         apple.Group = 14;
         apple.DropsFromMonsters = true;
         apple.DropLevel = 1;
-        apple.Durability = 3;
+        apple.Durability = 255;
         apple.Value = 5;
         apple.Width = 1;
         apple.Height = 1;
@@ -89,7 +89,7 @@ public class Potions : InitializerBase
         potion.Group = 14;
         potion.DropsFromMonsters = true;
         potion.DropLevel = 10;
-        potion.Durability = 3;
+        potion.Durability = 255;
         potion.Value = 10;
         potion.Width = 1;
         potion.Height = 1;
@@ -109,7 +109,7 @@ public class Potions : InitializerBase
         potion.Group = 14;
         potion.DropsFromMonsters = true;
         potion.DropLevel = 25;
-        potion.Durability = 3;
+        potion.Durability = 255;
         potion.Value = 20;
         potion.Width = 1;
         potion.Height = 1;
@@ -129,7 +129,7 @@ public class Potions : InitializerBase
         definition.Group = 14;
         definition.DropsFromMonsters = true;
         definition.DropLevel = 40;
-        definition.Durability = 3;
+        definition.Durability = 255;
         definition.Value = 30;
         definition.Width = 1;
         definition.Height = 1;
@@ -149,7 +149,7 @@ public class Potions : InitializerBase
         potion.Group = 14;
         potion.DropsFromMonsters = true;
         potion.DropLevel = 10;
-        potion.Durability = 3;
+        potion.Durability = 255;
         potion.Value = 10;
         potion.Width = 1;
         potion.Height = 1;
@@ -169,7 +169,7 @@ public class Potions : InitializerBase
         potion.Group = 14;
         potion.DropsFromMonsters = true;
         potion.DropLevel = 25;
-        potion.Durability = 3;
+        potion.Durability = 255;
         potion.Value = 20;
         potion.Width = 1;
         potion.Height = 1;
@@ -189,7 +189,7 @@ public class Potions : InitializerBase
         definition.Group = 14;
         definition.DropsFromMonsters = true;
         definition.DropLevel = 40;
-        definition.Durability = 3;
+        definition.Durability = 255;
         definition.Value = 30;
         definition.Width = 1;
         definition.Height = 1;
@@ -209,7 +209,7 @@ public class Potions : InitializerBase
         definition.Group = 14;
         definition.DropsFromMonsters = true;
         definition.DropLevel = 10;
-        definition.Durability = 3;
+        definition.Durability = 255;
         definition.Value = 10;
         definition.Width = 1;
         definition.Height = 1;
