@@ -12,8 +12,10 @@ using System.Linq;
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.DataModel.Entities;
+using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.Persistence.Initialization.CharacterClasses;
 using MUnique.OpenMU.Persistence.Initialization.Items;
+using MUnique.OpenMU.Persistence.Initialization.Skills;
 using Version095dItems = MUnique.OpenMU.Persistence.Initialization.Version095d.Items;
 
 internal static class ItemList097
@@ -162,11 +164,12 @@ internal static class ItemList097
         var classStartIndex = GetClassStartIndex(group, columns.Length);
         var (dropLevelIndex, durabilityIndex) = GetDropLevelAndDurabilityIndex(group, classStartIndex);
         var dropLevel = GetByte(columns, dropLevelIndex);
-        var durability = GetInt(columns, durabilityIndex);
+        var durability = GetDurability(group, columns, durabilityIndex);
         var isAmmunition = durability < 0
             || name.Contains("arrow", StringComparison.OrdinalIgnoreCase)
             || name.Contains("bolt", StringComparison.OrdinalIgnoreCase);
         var (wizardClass, knightClass, elfClass, magicGladiatorClass) = GetClassFlags(columns, classStartIndex);
+        var (requiredLevel, requiredEnergy, requiredStrength, requiredAgility, value) = GetRequirementValues(group, columns, classStartIndex);
 
         entry = new ItemListEntry(
             group,
@@ -182,7 +185,12 @@ internal static class ItemList097
             wizardClass,
             knightClass,
             elfClass,
-            magicGladiatorClass);
+            magicGladiatorClass,
+            requiredLevel,
+            requiredEnergy,
+            requiredStrength,
+            requiredAgility,
+            value);
 
         return true;
     }
@@ -202,7 +210,7 @@ internal static class ItemList097
         return ((ItemGroups)group) switch
         {
             ItemGroups.Misc1 => (classStartIndex - 7, classStartIndex - 6),
-            ItemGroups.Orbs => (13, 15),
+            ItemGroups.Orbs => (9, 11),
             ItemGroups.Shields => (13, 16),
             ItemGroups.Helm => (13, 16),
             ItemGroups.Armor => (13, 16),
@@ -210,6 +218,7 @@ internal static class ItemList097
             ItemGroups.Gloves => (13, 16),
             ItemGroups.Boots => (13, 16),
             ItemGroups.Misc2 => (14, -1),
+            ItemGroups.Scrolls => (9, -1),
             _ => (13, 17),
         };
     }
@@ -226,6 +235,31 @@ internal static class ItemList097
             GetByte(columns, classStartIndex + 1),
             GetByte(columns, classStartIndex + 2),
             GetByte(columns, classStartIndex + 3));
+    }
+
+    private static (int RequiredLevel, int RequiredEnergy, int RequiredStrength, int RequiredAgility, int Value) GetRequirementValues(byte group, string[] columns, int classStartIndex)
+    {
+        if (classStartIndex < 0)
+        {
+            return (0, 0, 0, 0, 0);
+        }
+
+        return ((ItemGroups)group) switch
+        {
+            ItemGroups.Orbs => (
+                NormalizeRequirement(GetInt(columns, classStartIndex - 5)),
+                NormalizeRequirement(GetInt(columns, classStartIndex - 4)),
+                NormalizeRequirement(GetInt(columns, classStartIndex - 3)),
+                NormalizeRequirement(GetInt(columns, classStartIndex - 2)),
+                NormalizeRequirement(GetInt(columns, classStartIndex - 1))),
+            ItemGroups.Scrolls => (
+                NormalizeRequirement(GetInt(columns, classStartIndex - 3)),
+                NormalizeRequirement(GetInt(columns, classStartIndex - 2)),
+                0,
+                0,
+                NormalizeRequirement(GetInt(columns, classStartIndex - 1))),
+            _ => (0, 0, 0, 0, 0),
+        };
     }
 
     private static byte ResolveSlot(byte group, int slotValue, string name)
@@ -315,6 +349,21 @@ internal static class ItemList097
         return int.TryParse(columns[index], NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)
             ? value
             : 0;
+    }
+
+    private static int NormalizeRequirement(int value)
+    {
+        return value < 0 ? 0 : value;
+    }
+
+    private static int GetDurability(byte group, string[] columns, int durabilityIndex)
+    {
+        if (durabilityIndex < 0)
+        {
+            return group == (byte)ItemGroups.Scrolls ? 1 : 0;
+        }
+
+        return GetInt(columns, durabilityIndex);
     }
 }
 
@@ -413,10 +462,17 @@ internal readonly record struct ItemListEntry(
     byte WizardClass,
     byte KnightClass,
     byte ElfClass,
-    byte MagicGladiatorClass);
+    byte MagicGladiatorClass,
+    int RequiredLevel,
+    int RequiredEnergy,
+    int RequiredStrength,
+    int RequiredAgility,
+    int Value);
 
 internal sealed class ItemList097Importer : InitializerBase
 {
+    private const byte SummonOrbMaximumItemLevel = 3;
+
     public ItemList097Importer(IContext context, GameConfiguration gameConfiguration)
         : base(context, gameConfiguration)
     {
@@ -439,6 +495,11 @@ internal sealed class ItemList097Importer : InitializerBase
             if (existingItems.Contains((entry.Group, entry.Number)))
             {
                 var existingItem = this.GameConfiguration.Items.First(item => item.Group == entry.Group && item.Number == entry.Number);
+                if (IsSkillEntry(entry))
+                {
+                    this.ApplySkillItemOverrides(existingItem, entry);
+                }
+
                 if (existingItem.ItemSlot is null && entry.Slot != byte.MaxValue)
                 {
                     existingItem.ItemSlot = this.GetSlotType(entry);
@@ -456,19 +517,7 @@ internal sealed class ItemList097Importer : InitializerBase
                     existingItem.DropsFromMonsters = false;
                 }
 
-                if (existingItem.QualifiedCharacters.Count == 0
-                    && (entry.WizardClass > 0 || entry.KnightClass > 0 || entry.ElfClass > 0 || entry.MagicGladiatorClass > 0))
-                {
-                    var qualifiedClasses = this.GameConfiguration.DetermineCharacterClassesByRank(
-                        entry.WizardClass,
-                        entry.KnightClass,
-                        entry.ElfClass,
-                        entry.MagicGladiatorClass,
-                        0,
-                        0,
-                        0);
-                    qualifiedClasses.ToList().ForEach(existingItem.QualifiedCharacters.Add);
-                }
+                this.UpdateQualifiedCharacters(existingItem, entry, overwrite: IsSkillEntry(entry));
 
                 continue;
             }
@@ -486,24 +535,44 @@ internal sealed class ItemList097Importer : InitializerBase
             item.MaximumItemLevel = GetMaximumItemLevel(entry);
             item.ItemSlot = this.GetSlotType(entry);
             item.SetGuid(item.Group, item.Number);
-            this.ApplyTemplateOptions(item);
-
-            if (entry.WizardClass > 0 || entry.KnightClass > 0 || entry.ElfClass > 0 || entry.MagicGladiatorClass > 0)
+            if (!IsSkillEntry(entry))
             {
-                var qualifiedClasses = this.GameConfiguration.DetermineCharacterClassesByRank(
-                    entry.WizardClass,
-                    entry.KnightClass,
-                    entry.ElfClass,
-                    entry.MagicGladiatorClass,
-                    0,
-                    0,
-                    0);
-                qualifiedClasses.ToList().ForEach(item.QualifiedCharacters.Add);
+                this.ApplyTemplateOptions(item);
             }
+
+            this.UpdateQualifiedCharacters(item, entry, overwrite: false);
+            this.ApplySkillItemOverrides(item, entry);
 
             this.GameConfiguration.Items.Add(item);
             existingItems.Add((entry.Group, entry.Number));
         }
+    }
+
+    private void ApplySkillItemOverrides(ItemDefinition item, ItemListEntry entry)
+    {
+        if (!IsSkillEntry(entry))
+        {
+            return;
+        }
+
+        var maximumItemLevel = GetMaximumItemLevel(entry);
+        if (item.MaximumItemLevel != maximumItemLevel)
+        {
+            item.MaximumItemLevel = maximumItemLevel;
+        }
+
+        if (item.PossibleItemOptions.Count > 0)
+        {
+            item.PossibleItemOptions.Clear();
+        }
+
+        if (entry.Value > 0)
+        {
+            item.Value = entry.Value;
+        }
+
+        this.AssignSkillIfMissing(item, entry);
+        this.UpdateItemRequirements(item, entry);
     }
 
     private ItemSlotType? GetSlotType(ItemListEntry entry)
@@ -554,6 +623,21 @@ internal sealed class ItemList097Importer : InitializerBase
             return 0;
         }
 
+        if (IsSummonOrbEntry(entry))
+        {
+            return SummonOrbMaximumItemLevel;
+        }
+
+        if (IsSkillEntry(entry))
+        {
+            return 0;
+        }
+
+        if (IsNonUpgradeableMiscItem(entry))
+        {
+            return 0;
+        }
+
         if (IsNonUpgradeableConsumable(entry.Name))
         {
             return 0;
@@ -569,7 +653,17 @@ internal sealed class ItemList097Importer : InitializerBase
             return false;
         }
 
-        return entry.Number is 15 or 23 or 24 or 25 or 26;
+        return entry.Number is 15 or 20 or 22 or 23 or 24 or 25 or 26;
+    }
+
+    private static bool IsNonUpgradeableMiscItem(ItemListEntry entry)
+    {
+        if (entry.Group != (byte)ItemGroups.Misc2)
+        {
+            return false;
+        }
+
+        return entry.Number is 15 or 20 or 21 or 22 or 23 or 24 or 25 or 26;
     }
 
     private static bool IsNonUpgradeableConsumable(string name)
@@ -582,5 +676,156 @@ internal sealed class ItemList097Importer : InitializerBase
         return name.Contains("Orb of", StringComparison.OrdinalIgnoreCase)
             || name.Contains("Jewel of", StringComparison.OrdinalIgnoreCase)
             || name.Contains("Scroll of", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsOrbEntry(ItemListEntry entry)
+    {
+        return entry.Group == (byte)ItemGroups.Orbs
+            && entry.Name.Contains("Orb", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsScrollEntry(ItemListEntry entry)
+    {
+        return entry.Group == (byte)ItemGroups.Scrolls;
+    }
+
+    private static bool IsSkillEntry(ItemListEntry entry)
+    {
+        return IsOrbEntry(entry) || IsScrollEntry(entry);
+    }
+
+    private static bool IsSummonOrbEntry(ItemListEntry entry)
+    {
+        return entry.Group == (byte)ItemGroups.Orbs && entry.Number == 11;
+    }
+
+    private void UpdateQualifiedCharacters(ItemDefinition item, ItemListEntry entry, bool overwrite)
+    {
+        if (entry.WizardClass == 0 && entry.KnightClass == 0 && entry.ElfClass == 0 && entry.MagicGladiatorClass == 0)
+        {
+            return;
+        }
+
+        if (overwrite)
+        {
+            item.QualifiedCharacters.Clear();
+        }
+        else if (item.QualifiedCharacters.Count > 0)
+        {
+            return;
+        }
+
+        var qualifiedClasses = this.GameConfiguration.DetermineCharacterClassesByRank(
+            entry.WizardClass,
+            entry.KnightClass,
+            entry.ElfClass,
+            entry.MagicGladiatorClass,
+            0,
+            0,
+            0);
+        qualifiedClasses.ToList().ForEach(item.QualifiedCharacters.Add);
+    }
+
+    private void AssignSkillIfMissing(ItemDefinition item, ItemListEntry entry)
+    {
+        if (item.Skill is not null)
+        {
+            return;
+        }
+
+        if (!TryGetSkillNumber(entry, out var skillNumber))
+        {
+            return;
+        }
+
+        item.Skill = this.GameConfiguration.Skills.FirstOrDefault(skill => skill.Number == (short)skillNumber);
+    }
+
+    private void UpdateItemRequirements(ItemDefinition item, ItemListEntry entry)
+    {
+        if (!IsSkillEntry(entry))
+        {
+            return;
+        }
+
+        this.RemoveRequirement(item, Stats.Level);
+        this.RemoveRequirement(item, Stats.TotalStrength);
+        this.RemoveRequirement(item, Stats.TotalAgility);
+        this.RemoveRequirement(item, GetEnergyRequirementAttribute(entry));
+
+        this.CreateItemRequirementIfNeeded(item, Stats.Level, entry.RequiredLevel);
+        this.CreateItemRequirementIfNeeded(item, Stats.TotalStrength, entry.RequiredStrength);
+        this.CreateItemRequirementIfNeeded(item, Stats.TotalAgility, entry.RequiredAgility);
+        this.CreateItemRequirementIfNeeded(item, GetEnergyRequirementAttribute(entry), entry.RequiredEnergy);
+    }
+
+    private AttributeDefinition GetEnergyRequirementAttribute(ItemListEntry entry)
+    {
+        return IsScrollEntry(entry) ? Stats.TotalEnergyRequirementValue : Stats.TotalEnergy;
+    }
+
+    private void RemoveRequirement(ItemDefinition item, AttributeDefinition attribute)
+    {
+        var persistentAttribute = attribute.GetPersistent(this.GameConfiguration);
+        var toRemove = item.Requirements.Where(requirement => requirement.Attribute == persistentAttribute).ToList();
+        foreach (var requirement in toRemove)
+        {
+            item.Requirements.Remove(requirement);
+        }
+    }
+
+    private static bool TryGetSkillNumber(ItemListEntry entry, out SkillNumber skillNumber)
+    {
+        if (entry.Group == (byte)ItemGroups.Orbs)
+        {
+            skillNumber = entry.Number switch
+            {
+                7 => SkillNumber.TwistingSlash,
+                8 => SkillNumber.Heal,
+                9 => SkillNumber.GreaterDefense,
+                10 => SkillNumber.GreaterDamage,
+                11 => SkillNumber.SummonGoblin,
+                12 => SkillNumber.RagefulBlow,
+                13 => SkillNumber.Impale,
+                14 => SkillNumber.SwellLife,
+                16 => SkillNumber.FireSlash,
+                17 => SkillNumber.Penetration,
+                18 => SkillNumber.IceArrow,
+                19 => SkillNumber.DeathStab,
+                _ => default,
+            };
+            return skillNumber != default;
+        }
+
+        if (entry.Group == (byte)ItemGroups.Scrolls)
+        {
+            skillNumber = entry.Number switch
+            {
+                0 => SkillNumber.Poison,
+                1 => SkillNumber.Meteorite,
+                2 => SkillNumber.Lightning,
+                3 => SkillNumber.FireBall,
+                4 => SkillNumber.Flame,
+                5 => SkillNumber.Teleport,
+                6 => SkillNumber.Ice,
+                7 => SkillNumber.Twister,
+                8 => SkillNumber.EvilSpirit,
+                9 => SkillNumber.Hellfire,
+                10 => SkillNumber.PowerWave,
+                11 => SkillNumber.AquaBeam,
+                12 => SkillNumber.Cometfall,
+                13 => SkillNumber.Inferno,
+                14 => SkillNumber.TeleportAlly,
+                15 => SkillNumber.SoulBarrier,
+                16 => SkillNumber.Decay,
+                17 => SkillNumber.IceStorm,
+                18 => SkillNumber.Nova,
+                _ => default,
+            };
+            return skillNumber != default;
+        }
+
+        skillNumber = default;
+        return false;
     }
 }

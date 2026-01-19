@@ -133,7 +133,7 @@ public abstract class DataInitializationBase : IDataInitializationPlugIn
             var plugInConfiguration = this.Context.CreateNew<PlugInConfiguration>();
             plugInConfiguration.SetGuid(plugInType.GUID);
             plugInConfiguration.TypeId = plugInType.GUID;
-            plugInConfiguration.IsActive = !plugInType.IsAssignableTo(typeof(IDisabledByDefault));
+            plugInConfiguration.IsActive = this.IsPlugInActiveByDefault(plugInType);
             this.GameConfiguration.PlugInConfigurations.Add(plugInConfiguration);
 
             if (plugInType.GetInterfaces().Contains(typeof(ISupportDefaultCustomConfiguration)))
@@ -184,6 +184,16 @@ public abstract class DataInitializationBase : IDataInitializationPlugIn
     /// Creates the game client definition.
     /// </summary>
     protected abstract void CreateGameClientDefinition();
+
+    /// <summary>
+    /// Determines if a plug-in should be activated by default for this initialization.
+    /// </summary>
+    /// <param name="plugInType">The plug-in type.</param>
+    /// <returns>True if the plug-in should be active by default.</returns>
+    protected virtual bool IsPlugInActiveByDefault(Type plugInType)
+    {
+        return !plugInType.IsAssignableTo(typeof(IDisabledByDefault));
+    }
 
     private void CreateDefaultPlugInConfiguration(Type plugInType, PlugInConfiguration plugInConfiguration, ReferenceHandler referenceHandler)
     {

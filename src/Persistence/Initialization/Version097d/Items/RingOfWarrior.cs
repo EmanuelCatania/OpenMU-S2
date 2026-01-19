@@ -4,12 +4,13 @@
 
 namespace MUnique.OpenMU.Persistence.Initialization.Version097d.Items;
 
+using MUnique.OpenMU.AttributeSystem;
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.GameLogic.Attributes;
 
 /// <summary>
-/// Initializes the ring of warrior used by new characters.
+/// Initializes the wizard's ring (item 13,20) used by the white wizard event.
 /// </summary>
 public class RingOfWarrior : InitializerBase
 {
@@ -35,7 +36,7 @@ public class RingOfWarrior : InitializerBase
         ring.SetGuid(13, 20);
         ring.Group = 13;
         ring.Number = 20;
-        ring.Name = "Ring of Warrior";
+        ring.Name = "Wizards Ring";
         ring.Width = 1;
         ring.Height = 1;
         ring.Durability = 30;
@@ -44,6 +45,12 @@ public class RingOfWarrior : InitializerBase
         ring.DropLevel = 0;
         ring.DropsFromMonsters = false;
         ring.ItemSlot = this.GameConfiguration.ItemSlotTypes.FirstOrDefault(slotType => slotType.ItemSlots.Contains(10));
+
+        ring.BasePowerUpAttributes.Add(this.CreateItemBasePowerUpDefinition(Stats.MinimumPhysBaseDmg, 1.1f, AggregateType.Multiplicate));
+        ring.BasePowerUpAttributes.Add(this.CreateItemBasePowerUpDefinition(Stats.MaximumPhysBaseDmg, 1.1f, AggregateType.Multiplicate));
+        ring.BasePowerUpAttributes.Add(this.CreateItemBasePowerUpDefinition(Stats.AttackSpeedAny, 10f, AggregateType.AddRaw));
+        ring.BasePowerUpAttributes.Add(this.CreateItemBasePowerUpDefinition(Stats.MinimumWizBaseDmg, 1.1f, AggregateType.Multiplicate));
+        ring.BasePowerUpAttributes.Add(this.CreateItemBasePowerUpDefinition(Stats.MaximumWizBaseDmg, 1.1f, AggregateType.Multiplicate));
 
         this.CreateItemRequirementIfNeeded(ring, Stats.Level, 0);
         foreach (var characterClass in this.GameConfiguration.CharacterClasses)

@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.Network.PlugIns;
+using MUnique.OpenMU.Persistence.Initialization.PlugIns.CharacterCreated;
 using MUnique.OpenMU.Persistence.Initialization.Version075.TestAccounts;
 using MUnique.OpenMU.PlugIns;
 
@@ -59,5 +60,26 @@ public class DataInitialization : DataInitializationBase
         version095Definition.Version = new byte[] { 0x30, 0x39, 0x35, 0x30, 0x34 };
         version095Definition.Serial = Encoding.ASCII.GetBytes("4zYGWgYggf9ZENHc");
         version095Definition.Description = "Version 0.95d Client";
+    }
+
+    /// <inheritdoc />
+    protected override bool IsPlugInActiveByDefault(Type plugInType)
+    {
+        if (plugInType == typeof(AddRingOfWarriorLevel40ForNewCharacters)
+            || plugInType == typeof(AddRingOfWarriorLevel80ForNewCharacters))
+        {
+            return false;
+        }
+
+        if (plugInType == typeof(AddFireBlastForDarkLord)
+            || plugInType == typeof(AddForceForDarkLord)
+            || plugInType == typeof(AddShortSwordForDarkLord)
+            || plugInType == typeof(AddSmallShieldForDarkLord)
+            || plugInType == typeof(AddLanceForSummoner))
+        {
+            return false;
+        }
+
+        return base.IsPlugInActiveByDefault(plugInType);
     }
 }
