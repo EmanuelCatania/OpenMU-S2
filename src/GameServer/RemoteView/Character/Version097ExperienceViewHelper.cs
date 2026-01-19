@@ -50,7 +50,7 @@ internal static class Version097ExperienceViewHelper
 
         progress = Math.Clamp(progress, 0.0, 1.0);
 
-        var maxLevel = Math.Max(ClientMaxLevel, player.GameServerContext.Configuration.MaximumLevel);
+        var maxLevel = Math.Max(ClientMaxLevel, (int)player.GameServerContext.Configuration.MaximumLevel);
         var scaleFactor = uint.MaxValue * MaxExperienceFactor / Math.Pow(maxLevel, 3);
         var previousLevel = Math.Clamp(level - 1, 0, maxLevel);
         var currentLevel = Math.Clamp(level, 0, maxLevel);
