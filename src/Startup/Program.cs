@@ -491,15 +491,16 @@ internal sealed class Program : IDisposable
         return parameter.Substring(parameter.IndexOf(':') + 1).StartsWith("enabled", StringComparison.InvariantCultureIgnoreCase);
     }
 
-    private string GetVersionParameter(string[] args)
+    private string? GetVersionParameter(string[] args)
     {
         var parameter = args.FirstOrDefault(a => a.StartsWith("-version:", StringComparison.InvariantCultureIgnoreCase));
-        if (parameter is null)
+        if (parameter is not null)
         {
-            return "season6"; // default
+            return parameter.Substring(parameter.IndexOf(':') + 1);
         }
 
-        return parameter.Substring(parameter.IndexOf(':') + 1);
+        var envVersion = Environment.GetEnvironmentVariable("OPENMU_VERSION");
+        return string.IsNullOrWhiteSpace(envVersion) ? null : envVersion;
     }
 
     private async Task<IMigratableDatabaseContextProvider> DeterminePersistenceContextProviderAsync(string[] args, ILoggerFactory loggerFactory, IConfigurationChangeListener changeListener)
@@ -509,27 +510,38 @@ internal sealed class Program : IDisposable
         IMigratableDatabaseContextProvider contextProvider;
         if (args.Contains("-demo"))
         {
+            var demoVersion = string.IsNullOrWhiteSpace(version) ? "season6" : version;
             contextProvider = new InMemoryPersistenceContextProvider(null); // TODO pass change mediator or whatever
-            await this.InitializeDataAsync(version, loggerFactory, contextProvider).ConfigureAwait(false);
+            await this.InitializeDataAsync(demoVersion, loggerFactory, contextProvider).ConfigureAwait(false);
         }
         else
         {
             contextProvider = await this.PrepareRepositoryProviderAsync(args.Contains("-reinit"), version, loggerFactory, changeListener).ConfigureAwait(false);
         }
 
-        await this.ReadSystemConfigurationAsync(contextProvider).ConfigureAwait(false);
+        if (await contextProvider.DatabaseExistsAsync().ConfigureAwait(false))
+        {
+            await this.ReadSystemConfigurationAsync(contextProvider).ConfigureAwait(false);
+        }
 
         return contextProvider;
     }
 
-    private async Task<IMigratableDatabaseContextProvider> PrepareRepositoryProviderAsync(bool reinit, string version, ILoggerFactory loggerFactory, IConfigurationChangeListener changeListener)
+    private async Task<IMigratableDatabaseContextProvider> PrepareRepositoryProviderAsync(bool reinit, string? version, ILoggerFactory loggerFactory, IConfigurationChangeListener changeListener)
     {
         var contextProvider = new PersistenceContextProvider(loggerFactory, changeListener);
+        var resolvedVersion = string.IsNullOrWhiteSpace(version) ? "season6" : version;
         if (reinit || !await contextProvider.DatabaseExistsAsync().ConfigureAwait(false))
         {
+            if (!reinit && string.IsNullOrWhiteSpace(version))
+            {
+                this._logger.Information("No database found and no version specified. Open /setup in the admin panel to initialize.");
+                return contextProvider;
+            }
+
             this._logger.Information("The database is getting (re-)initialized...");
             using var update = await contextProvider.ReCreateDatabaseAsync().ConfigureAwait(false);
-            await this.InitializeDataAsync(version, loggerFactory, contextProvider).ConfigureAwait(false);
+            await this.InitializeDataAsync(resolvedVersion, loggerFactory, contextProvider).ConfigureAwait(false);
             this._logger.Information("...initialization finished.");
         }
         else if (!await contextProvider.IsDatabaseUpToDateAsync().ConfigureAwait(false))
