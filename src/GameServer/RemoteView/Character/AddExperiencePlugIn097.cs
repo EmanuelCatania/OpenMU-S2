@@ -4,14 +4,12 @@
 
 namespace MUnique.OpenMU.GameServer.RemoteView.Character;
 
-using System.Buffers.Binary;
 using System.Runtime.InteropServices;
-using MUnique.OpenMU.GameServer.RemoteView;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.GameLogic.Views.Character;
-using MUnique.OpenMU.Network;
+using MUnique.OpenMU.Network.Packets.ServerToClient;
 using MUnique.OpenMU.Network.PlugIns;
 using MUnique.OpenMU.PlugIns;
 
@@ -43,7 +41,6 @@ public class AddExperiencePlugIn097 : IAddExperiencePlugIn
             return;
         }
 
-        var remainingExperience = exp;
         ushort damage = 0;
         if (obj is not null && obj.Id != obj.LastDeath?.KillerId)
         {
@@ -58,7 +55,7 @@ public class AddExperiencePlugIn097 : IAddExperiencePlugIn
 
         var currentExperience = selectedCharacter.Experience;
         var level = (int)attributes[Stats.Level];
-        var (viewExperience, viewNextExperience) = Version097ExperienceViewHelper.GetViewExperience(this._player, currentExperience, level);
+        var (viewExperience, _) = Version097ExperienceViewHelper.GetViewExperience(this._player, currentExperience, level);
         var previousExperience = Math.Max(0L, currentExperience - exp);
         var (previousViewExperience, _) = Version097ExperienceViewHelper.GetViewExperience(this._player, previousExperience, level);
         var viewExperienceDelta = viewExperience >= previousViewExperience
@@ -66,31 +63,14 @@ public class AddExperiencePlugIn097 : IAddExperiencePlugIn
             : 0u;
         var remainingViewExperience = viewExperienceDelta;
 
-        var viewDamage = (uint)damage;
         var sentOnce = false;
         while (remainingViewExperience > 0 || !sentOnce)
         {
             ushort sendExp = remainingViewExperience > ushort.MaxValue
                 ? ushort.MaxValue
                 : (ushort)remainingViewExperience;
-            await connection.SendAsync(() =>
-            {
-                const int packetLength = 21;
-                var span = connection.Output.GetSpan(packetLength)[..packetLength];
-                span[0] = 0xC3;
-                span[1] = (byte)packetLength;
-                span[2] = 0x9C;
-                BinaryPrimitives.WriteUInt16BigEndian(span.Slice(3, 2), id);
-                BinaryPrimitives.WriteUInt16BigEndian(span.Slice(5, 2), sendExp);
-                BinaryPrimitives.WriteUInt16BigEndian(span.Slice(7, 2), damage);
-                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(9, 4), viewDamage);
-                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(13, 4), viewExperience);
-                BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(17, 4), viewNextExperience);
-                PacketLogHelper.LogPacket(this._player.Logger, "9C RewardExperience", span, packetLength);
-                return packetLength;
-            }).ConfigureAwait(false);
+            await connection.SendExperienceGainedAsync(id, sendExp, damage).ConfigureAwait(false);
             damage = 0;
-            remainingExperience = 0;
             remainingViewExperience = remainingViewExperience > sendExp ? remainingViewExperience - sendExp : 0;
             sentOnce = true;
         }

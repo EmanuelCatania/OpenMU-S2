@@ -137,6 +137,7 @@ public class QuestCompletionAction
             case QuestRewardType.CharacterEvolutionFirstToSecond:
                 player.SelectedCharacter!.CharacterClass = player.SelectedCharacter.CharacterClass?.NextGenerationClass
                                                            ?? throw new InvalidOperationException($"Current character class has no next generation");
+                player.OnAppearanceChanged();
                 await player.ForEachWorldObserverAsync<ILegacyQuestRewardPlugIn>(
                     p => p.ShowAsync(
                         player,
@@ -148,6 +149,7 @@ public class QuestCompletionAction
             case QuestRewardType.CharacterEvolutionSecondToThird:
                 player.SelectedCharacter!.CharacterClass = player.SelectedCharacter.CharacterClass?.NextGenerationClass
                                                            ?? throw new InvalidOperationException($"Current character class has no next generation");
+                player.OnAppearanceChanged();
                 await player.ForEachWorldObserverAsync<ILegacyQuestRewardPlugIn>(
                     p => p.ShowAsync(
                         player,
