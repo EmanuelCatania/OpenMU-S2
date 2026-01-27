@@ -17,6 +17,8 @@ services:
       - "55980:55980"
     environment:
       DB_HOST: database
+      DB_ADMIN_USER: ${DB_ADMIN_USER:-postgres}
+      DB_ADMIN_PW: ${DB_ADMIN_PW:-admin}
       ASPNETCORE_URLS: http://+:8080
     working_dir: /app/
     depends_on:
@@ -26,9 +28,9 @@ services:
     image: postgres
     container_name: database
     environment:
-      POSTGRES_PASSWORD: admin
+      POSTGRES_PASSWORD: ${DB_ADMIN_PW:-admin}
       POSTGRES_DB: openmu
-      POSTGRES_USER: postgres
+      POSTGRES_USER: ${DB_ADMIN_USER:-postgres}
     ports:
       - "5432"
     volumes:
