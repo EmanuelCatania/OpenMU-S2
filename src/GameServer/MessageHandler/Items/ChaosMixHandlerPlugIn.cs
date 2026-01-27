@@ -49,6 +49,16 @@ internal class ChaosMixHandlerPlugIn : IPacketHandlerPlugIn
             mixType = (byte)message.MixType;
         }
 
+        if (player.OpenedNpc?.Definition is { } npcDefinition
+            && npcDefinition.ItemCraftings.All(c => c.Number != mixType))
+        {
+            var crafting = this._mixAction.FindAppropriateCraftingByItems(player);
+            if (crafting is not null)
+            {
+                mixType = crafting.Number;
+            }
+        }
+
         var socketSlot = packet.Length > 4 ? message.SocketSlot : (byte)0;
         await this._mixAction.MixItemsAsync(player, mixType, socketSlot).ConfigureAwait(false);
     }

@@ -90,7 +90,7 @@ public class AppearanceSerializer095 : IAppearanceSerializer
         ItemAppearance?[] itemArray = new ItemAppearance[InventoryConstants.EquippableSlotsCount];
         for (byte i = 0; i < itemArray.Length; i++)
         {
-            itemArray[i] = appearanceData.EquippedItems.FirstOrDefault(item => item.ItemSlot == i && item.Definition?.Number < 16);
+            itemArray[i] = appearanceData.EquippedItems.FirstOrDefault(item => item.ItemSlot == i && item.Definition?.Number < 32);
         }
 
         if (appearanceData.CharacterClass is not null)
