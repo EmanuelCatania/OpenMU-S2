@@ -31,32 +31,33 @@ internal class ChaosMixHandlerPlugIn : IPacketHandlerPlugIn
     {
         ChaosMachineMixRequest message = packet;
 
-        byte mixType;
-        if (packet.Length == 3)
+        var isLegacyClient = (player as IClientVersionProvider)?.ClientVersion is { Season: 0 };
+        byte mixType = packet.Length == 3 ? (byte)0 : (byte)message.MixType;
+        if (isLegacyClient)
         {
-            // Older versions (e.g. 0.75, 0.95d) don't provide a mix type identifier, so we have to infer the item crafting
-            var crafting = this._mixAction.FindAppropriateCraftingByItems(player);
-            if (crafting is null)
+            var craftingByItems = this._mixAction.FindAppropriateCraftingByItems(player);
+            if (craftingByItems is not null)
             {
+                mixType = craftingByItems.Number;
+            }
+            else if (packet.Length == 3)
+            {
+                // Older versions (e.g. 0.75, 0.95d) don't provide a mix type identifier, so we have to infer the item crafting
                 await player.InvokeViewPlugInAsync<IShowItemCraftingResultPlugIn>(p => p.ShowResultAsync(CraftingResult.IncorrectMixItems, 0, 0, null)).ConfigureAwait(false);
                 return;
             }
-
-            mixType = crafting.Number;
         }
-        else
+        else if (packet.Length == 3)
         {
-            mixType = (byte)message.MixType;
+            await player.InvokeViewPlugInAsync<IShowItemCraftingResultPlugIn>(p => p.ShowResultAsync(CraftingResult.IncorrectMixItems, 0, 0, null)).ConfigureAwait(false);
+            return;
         }
 
         if (player.OpenedNpc?.Definition is { } npcDefinition
             && npcDefinition.ItemCraftings.All(c => c.Number != mixType))
         {
-            var crafting = this._mixAction.FindAppropriateCraftingByItems(player);
-            if (crafting is not null)
-            {
-                mixType = crafting.Number;
-            }
+            await player.InvokeViewPlugInAsync<IShowItemCraftingResultPlugIn>(p => p.ShowResultAsync(CraftingResult.IncorrectMixItems, 0, 0, null)).ConfigureAwait(false);
+            return;
         }
 
         var socketSlot = packet.Length > 4 ? message.SocketSlot : (byte)0;
