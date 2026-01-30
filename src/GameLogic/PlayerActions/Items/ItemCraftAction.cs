@@ -38,7 +38,7 @@ public class ItemCraftAction
             {
                 var definition = item.Definition;
                 var options = string.Join(",",
-                    item.ItemOptions.Select(o => o.ItemOption?.OptionType.ToString() ?? "None"));
+                    item.ItemOptions.Select(o => o.ItemOption?.OptionType?.ToString() ?? "None"));
                 return $"slot={item.ItemSlot} name=\"{definition?.Name}\" g/n={definition?.Group}/{definition?.Number} lvl={item.Level} dur={item.Durability} opt=[{options}]";
             });
             player.Logger.LogInformation(
