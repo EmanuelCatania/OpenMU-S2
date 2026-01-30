@@ -252,7 +252,7 @@ internal class ChaosMixes : InitializerBase
         randomExcItem.MaximumItemLevel = Constants.MaximumItemLevel;
         randomExcItem.NpcPriceDivisor = 40_000;
         randomExcItem.FailResult = MixResult.Disappear;
-        randomExcItem.RequiredItemOptions.Add(this.GameConfiguration.ItemOptionTypes.First(o => o == ItemOptionTypes.Excellent));
+        randomExcItem.RequiredItemOptions.Add(this.GameConfiguration.ItemOptionTypes.First(o => o == ItemOptionTypes.Option));
         randomExcItem.SuccessResult = MixResult.Disappear;
         craftingSettings.RequiredItems.Add(randomExcItem);
 
@@ -264,12 +264,28 @@ internal class ChaosMixes : InitializerBase
         chaos.PossibleItems.Add(this.GameConfiguration.Items.First(i => i.Name == "Jewel of Chaos"));
         craftingSettings.RequiredItems.Add(chaos);
 
+        var bless = this.Context.CreateNew<ItemCraftingRequiredItem>();
+        bless.MinimumAmount = 0;
+        bless.SuccessResult = MixResult.Disappear;
+        bless.FailResult = MixResult.Disappear;
+        bless.PossibleItems.Add(this.GameConfiguration.Items.First(i => i.Name == "Jewel of Bless"));
+        craftingSettings.RequiredItems.Add(bless);
+
+        var soul = this.Context.CreateNew<ItemCraftingRequiredItem>();
+        soul.MinimumAmount = 0;
+        soul.SuccessResult = MixResult.Disappear;
+        soul.FailResult = MixResult.Disappear;
+        soul.PossibleItems.Add(this.GameConfiguration.Items.First(i => i.Name == "Jewel of Soul"));
+        craftingSettings.RequiredItems.Add(soul);
+
         var feather = this.Context.CreateNew<ItemCraftingRequiredItem>();
         feather.MinimumAmount = 1;
         feather.MaximumAmount = 1;
+        feather.MinimumItemLevel = 0;
+        feather.MaximumItemLevel = Constants.MaximumItemLevel;
         feather.SuccessResult = MixResult.Disappear;
         feather.FailResult = MixResult.Disappear;
-        feather.PossibleItems.Add(this.GameConfiguration.Items.First(i => i.Name == "Loch's Feather"));
+        feather.PossibleItems.Add(this.GameConfiguration.Items.First(i => i.Group == 13 && i.Number == 14));
         craftingSettings.RequiredItems.Add(feather);
 
         craftingSettings.ResultItemSelect = ResultItemSelection.Any;

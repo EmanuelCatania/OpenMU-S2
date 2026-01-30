@@ -31,6 +31,24 @@ public class ItemCraftAction
             return;
         }
 
+        if (npcStats?.NpcWindow == NpcWindow.ChaosMachine)
+        {
+            var items = player.TemporaryStorage?.Items.ToList() ?? new List<Item>();
+            var itemDetails = items.Select(item =>
+            {
+                var definition = item.Definition;
+                var options = string.Join(",",
+                    item.ItemOptions.Select(o => o.ItemOption?.OptionType.ToString() ?? "None"));
+                return $"slot={item.ItemSlot} name=\"{definition?.Name}\" g/n={definition?.Group}/{definition?.Number} lvl={item.Level} dur={item.Durability} opt=[{options}]";
+            });
+            player.Logger.LogInformation(
+                "ChaosMixItems: mix={MixType} socket={SocketSlot} count={ItemCount} items={Items}",
+                mixTypeId,
+                socketSlot,
+                items.Count,
+                string.Join(" | ", itemDetails));
+        }
+
         if (!this._craftingHandlerCache.TryGetValue(crafting, out var craftingHandler))
         {
             craftingHandler = this.CreateCraftingHandler(crafting);
